@@ -6,28 +6,28 @@ using Gtk
 using Gtk.ShortNames
 
 function pkgviewer()
-  builder = Builder("C:\\Users\\knopp\\.julia\\JuliaTools.jl\\src\\pkgviewer.xml")
-  #builder = Builder(joinpath(dirname(Base.source_path()),"pkgviewer.xml"))
+  filename = joinpath(dirname(Base.source_path()),"pkgviewer.xml")
+  if !isfile(filename)
+    filename = Pkg.dir("JuliaTools.jl","src","pkgviewer.xml")
+  end
+  global builder = Builder(filename)
 
-  installedPkg = Pkg.installed()
-  availablePkg = Pkg.available()
+  global installedPkg = Pkg.installed()
+  global availablePkg = Pkg.available()
   
-  lsInst=ListStore(String,String,Bool)
-  lsAvail=ListStore(String,String,Bool)
-  lsAll=ListStore(String,String,Bool) 
+  global lsAll = ListStore(String,String,Bool)
+  global tmFiltered = nothing
   for (name,version) in installedPkg
-    push!(lsInst,(name,string(version),true))
 	push!(lsAll,(name,string(version),true))
   end
   
   for name in availablePkg
-    push!(lsAvail,(name,"",false))
 	if !haskey(installedPkg,name)
 	  push!(lsAll,(name,"",false))
 	end
   end  
   
-  tv=TreeView(lsAll)
+  global tv = TreeView(lsAll)
   r1=CellRendererText()
   r2=CellRendererToggle()
   c1=TreeViewColumn("Name", r1, {"text" => 0})
@@ -42,22 +42,78 @@ function pkgviewer()
   push!(sw,tv)
   #hbox1[tv,:expand] = true
   
-  cbShowAll = G_.object(builder,"cbShowAll")
-  btnAddRemove = G_.object(builder,"btnAddRemove")
+  global cbShowAll = G_.object(builder,"cbShowAll")
+  global btnAddRemove = G_.object(builder,"btnAddRemove")
+  global spinner = G_.object(builder,"spinner")
 
   signal_connect(cbShowAll,"toggled") do widget
     showAll = getproperty(cbShowAll,:active,Bool)
-	G_.model(tv, showAll ? lsAll : lsInst)
+    if(showAll)
+      G_.model(tv, lsAll)
+    else
+      tmFiltered = TreeModelFilter(lsAll)
+      G_.visible_column(tmFiltered,2)
+      G_.model(tv, tmFiltered)
+    end
   end
+  
+  @everywhere function pkgfinished()
+    println("Pkg finished")
+    # TODO (does not work)
+    # selectionChanged()
+    stop(spinner)
+  end
+  
+  @everywhere function doPkgWork(selectedPkg)
+    println("doPkgWork")
+    println(selectedPkg)
+    if selectedPkg[3]
+      Pkg.rm(selectedPkg[1])
+    else
+      Pkg.add(selectedPkg[1])
+    end
+    remotecall(1, pkgfinished)
+  end 
   
   signal_connect(btnAddRemove,"clicked") do widget
+      println("btnAddRemove clicked")
+      if selectedPkg != nothing
+        start(spinner)
+          
+        # Hack 
+        if getproperty(cbShowAll,:active,Bool)
+          lsAll[currentIt,3] = !selectedPkg[3]
+        else
+          #TODO lsAll[currentIt,3] = !selectedPkg[3]
+        end       
 
+       
+          
+          @spawn doPkgWork(selectedPkg)
+      end
   end
   
-  selection = G_.selection(tv)
-  signal_connect(selection,"changed") do widget
-    println("selection-changed")
-  end  
+  global selection = G_.selection(tv)
+  global selectedPkg = nothing
+  global currentIt = nothing
+
+  function selectionChanged( widget=nothing )
+    m, currentIt, valid = selected(selection)
+    
+    if valid && !isvalid(lsAll, currentIt)
+      it = TreeIter()
+      Gtk.convert_iter_to_child_iter(tmFiltered, it, currentIt)
+      currentIt = it
+    end
+    
+    if valid
+        selectedPkg = lsAll[currentIt]
+        print(selectedPkg)
+        G_.label(btnAddRemove, selectedPkg[3] ? "Remove" : "Add")
+    end
+  end
+  
+  signal_connect(selectionChanged, selection,"changed")  
   
   win = G_.object(builder,"mainWindow")
   show(win)
