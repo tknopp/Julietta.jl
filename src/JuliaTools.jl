@@ -1,70 +1,79 @@
-#module JuliaTools
+module JuliaTools
 
-#export pkgviewer
+export PkgViewer
 
 using Gtk
 using Gtk.ShortNames
 
-function pkgviewer()
+
+type PkgViewer <: Gtk.GtkWindowI
+  handle::Ptr{Gtk.GObjectI}
+  builder::GtkBuilder
+  store::GtkListStore
+end
+
+function PkgViewer()
   filename = joinpath(dirname(Base.source_path()),"pkgviewer.xml")
   if !isfile(filename)
     filename = Pkg.dir("JuliaTools.jl","src","pkgviewer.xml")
   end
-  global builder = Builder(filename)
-
-  global installedPkg = Pkg.installed()
-  global availablePkg = Pkg.available()
+  builder = Builder(filename)
   
-  global lsAll = ListStore(String,String,Bool)
-  global tmFiltered = nothing
+  installedPkg = Pkg.installed()
+  availablePkg = Pkg.available()
+  
+  store = ListStore(String,String,Bool)
+  tmFiltered = nothing
   for (name,version) in installedPkg
-	push!(lsAll,(name,string(version),true))
+	push!(store,(name,string(version),true))
   end
   
   for name in availablePkg
 	if !haskey(installedPkg,name)
-	  push!(lsAll,(name,"",false))
+	  push!(store,(name,"",false))
 	end
-  end  
+  end    
   
-  global tv = TreeView(lsAll)
-  r1=CellRendererText()
-  r2=CellRendererToggle()
-  c1=TreeViewColumn("Name", r1, {"text" => 0})
+  tv = TreeView(store)
+  r1 = CellRendererText()
+  r2 = CellRendererToggle()
+  c1 = TreeViewColumn("Name", r1, {"text" => 0})
+  c2 = TreeViewColumn("Version", r1,{"text" => 1})
+  c3 = TreeViewColumn("Installed", r2,{"active" => 2})
   G_.sort_column_id(c1,0)
-  c2=TreeViewColumn("Version", r1,{"text" => 1})
-  c3=TreeViewColumn("Installed", r2,{"active" => 2})  
-  push!(tv,c1)
-  push!(tv,c2) 
-  push!(tv,c3)    
+  G_.sort_column_id(c2,1)
+  G_.sort_column_id(c3,2)
+  push!(tv,c1,c2,c3)
+  
+  G_.sort_column_id(store,0,Gtk.GtkSortType.GTK_SORT_ASCENDING)
   
   sw = G_.object(builder,"swAvailable")
-  push!(sw,tv)
-  #hbox1[tv,:expand] = true
+  push!(sw,tv)  
   
-  global cbShowAll = G_.object(builder,"cbShowAll")
-  global btnAddRemove = G_.object(builder,"btnAddRemove")
-  global spinner = G_.object(builder,"spinner")
+  
+  cbShowAll = G_.object(builder,"cbShowAll")
+  btnAddRemove = G_.object(builder,"btnAddRemove")
+  spinner = G_.object(builder,"spinner")
 
   signal_connect(cbShowAll,"toggled") do widget
     showAll = getproperty(cbShowAll,:active,Bool)
     if(showAll)
-      G_.model(tv, lsAll)
+      G_.model(tv, store)
     else
-      tmFiltered = TreeModelFilter(lsAll)
+      tmFiltered = TreeModelFilter(store)
       G_.visible_column(tmFiltered,2)
       G_.model(tv, tmFiltered)
     end
   end
   
-  @everywhere function pkgfinished()
+  function pkgfinished()
     println("Pkg finished")
     # TODO (does not work)
     # selectionChanged()
     stop(spinner)
   end
   
-  @everywhere function doPkgWork(selectedPkg)
+  function doPkgWork(selectedPkg)
     println("doPkgWork")
     println(selectedPkg)
     if selectedPkg[3]
@@ -72,52 +81,50 @@ function pkgviewer()
     else
       Pkg.add(selectedPkg[1])
     end
-    remotecall(1, pkgfinished)
+    #remotecall(1, pkgfinished)
+    pkgfinished()
   end 
   
   signal_connect(btnAddRemove,"clicked") do widget
       println("btnAddRemove clicked")
       if selectedPkg != nothing
         start(spinner)
+        store[currentIt,3] = !selectedPkg[3] 
           
-        # Hack 
-        if getproperty(cbShowAll,:active,Bool)
-          lsAll[currentIt,3] = !selectedPkg[3]
-        else
-          #TODO lsAll[currentIt,3] = !selectedPkg[3]
-        end       
-
-       
-          
-          @spawn doPkgWork(selectedPkg)
+        @async doPkgWork(selectedPkg)
       end
   end
   
-  global selection = G_.selection(tv)
-  global selectedPkg = nothing
-  global currentIt = nothing
+  
+  selection = G_.selection(tv)
+  selectedPkg = nothing
+  currentIt = nothing
 
   function selectionChanged( widget=nothing )
     m, currentIt, valid = selected(selection)
     
-    if valid && !isvalid(lsAll, currentIt)
+    if valid && !isvalid(store, currentIt)
       it = TreeIter()
       Gtk.convert_iter_to_child_iter(tmFiltered, it, currentIt)
       currentIt = it
     end
     
     if valid
-        selectedPkg = lsAll[currentIt]
+        selectedPkg = store[currentIt]
         print(selectedPkg)
         G_.label(btnAddRemove, selectedPkg[3] ? "Remove" : "Add")
     end
   end
   
-  signal_connect(selectionChanged, selection,"changed")  
+  signal_connect(selectionChanged, selection,"changed")    
   
   win = G_.object(builder,"mainWindow")
   show(win)
+  pkgViewer = PkgViewer(win,builder,store)
+  Gtk.gc_move_ref(pkgViewer, win)
 end
 
 
-#end #module
+
+
+end #module
