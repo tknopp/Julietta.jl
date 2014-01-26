@@ -1,9 +1,10 @@
 #module JuliaTools
 
-#export PkgViewer, VariableViewer, ModuleBrowser
+#export PkgViewer, VariableViewer, ModuleBrowser, SourceViewer
 
 using Gtk
 using Gtk.ShortNames
+using GtkSourceWidget
 
 
 type PkgViewer <: Gtk.GtkWindowI
@@ -276,6 +277,28 @@ function ModuleBrowser()
   
   moduleBrowser = ModuleBrowser(win)
   Gtk.gc_move_ref(moduleBrowser, win)
+end
+
+
+type SourceViewer <: Gtk.GtkWindowI
+  handle::Ptr{Gtk.GObjectI}
+end
+
+function SourceViewer()
+  
+  m = GtkSourceLanguageManager()
+  l = GtkSourceWidget.language(m,"julia")
+  b = GtkSourceBuffer(l)
+  v = GtkSourceView(b)
+  
+  GtkSourceWidget.show_line_numbers!(v,true)
+  GtkSourceWidget.auto_indent!(v,true)
+  
+  win = GtkWindow(v,"Source Viewer")
+  show(win)
+  
+  sourceViewer = SourceViewer(win)
+  Gtk.gc_move_ref(sourceViewer, win)
 end
 
 #end #module
