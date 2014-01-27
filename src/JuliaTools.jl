@@ -4,7 +4,7 @@
 
 using Gtk
 using Gtk.ShortNames
-using GtkSourceWidget
+#using GtkSourceWidget
 
 
 type PkgViewer <: Gtk.GtkWindowI
@@ -175,6 +175,14 @@ type ModuleBrowser <: Gtk.GtkWindowI
 end
 
 function ModuleBrowser()
+  Base.Help.init_help()
+
+  filename = joinpath(dirname(Base.source_path()),"moduleBrowser.ui")
+  if !isfile(filename)
+    filename = Pkg.dir("JuliaTools.jl","src","moduleBrowser.ui")
+  end
+  builder = Builder(filename)
+
   storeModules = ListStore(String)
   
   tvModules = TreeView(storeModules)
@@ -205,27 +213,21 @@ function ModuleBrowser()
   
   G_.sort_column_id(storeContent,0,Gtk.GtkSortType.GTK_SORT_ASCENDING)  
   
-  sw1 = ScrolledWindow()
-  push!(sw1,tvModules)
-  sw2 = ScrolledWindow()
-  push!(sw2,tvContent)  
+  swModules = G_.object(builder,"swModules")
+  push!(swModules,tvModules)    
+  
+  swContent = G_.object(builder,"swContent")
+  push!(swContent,tvContent)  
   
   textBuf = TextBuffer()
   textV = TextView(textBuf)  
-  sw3 = ScrolledWindow()
-  push!(sw3,textV)   
+  swMethods = G_.object(builder,"swMethods")
+  push!(swMethods,textV)
   
-  hbox = BoxLayout(:h)
-  push!(hbox,sw1)
-  setproperty!(hbox,:expand,sw1,true)
-  push!(hbox,sw2)
-  setproperty!(hbox,:expand,sw2,true)
-  push!(hbox,sw3)
-  setproperty!(hbox,:expand,sw3,true)    
-  setproperty!(sw1,:spacing,5)
-  setproperty!(sw2,:spacing,5)
-  setproperty!(sw3,:spacing,5)
-
+  textBufHelp = TextBuffer()
+  textVHelp = TextView(textBufHelp)  
+  swHelp = G_.object(builder,"swHelp")
+  push!(swHelp,textVHelp)  
   
   selection = G_.selection(tvModules)
   selectedModule = nothing
@@ -240,7 +242,9 @@ function ModuleBrowser()
       empty!(storeContent)
       content = names( eval(symbol( selectedModule[1] )) )
       for v in content
-        push!(storeContent, (string(v), string(typeof(eval(v)))) )  
+        if isdefined(v) 
+          push!(storeContent, (string(v), string(typeof(eval(v)))) )  
+        end
       end
         
     end
@@ -259,12 +263,32 @@ function ModuleBrowser()
     if valid
       selectedCont = storeContent[currentItCont]
       println(selectedCont)
-      if selectedCont[2] == "Function"
+      if selectedCont[2] == "Function" && isgeneric(eval(symbol(selectedCont[1])))
         txt = string(methods(eval(symbol(selectedCont[1]))))
-      else
+        
+        funcStr = string(selectedModule[1],".",selectedCont[1])
+        if haskey(Base.Help.FUNCTION_DICT, funcStr)
+          helpVec = Base.Help.FUNCTION_DICT[funcStr]
+          txtHelp = ""
+          for s in helpVec
+            txtHelp = string(txtHelp, s)
+          end
+        else
+          txtHelp = string(funcStr," is not documented")
+        end
+      elseif selectedCont[2] == "DataType" 
+        fields =  names(eval(symbol(selectedCont[1])))
         txt = ""
+        for f in fields
+          txt = string(txt, string(f),"\n")# "       ",typeof(eval(f)),"\n")
+        end             
+        txtHelp = ""
+      else 
+        txt = ""
+        txtHelp = ""
       end
       G_.text(textBuf, txt, -1)
+      G_.text(textBufHelp, txtHelp, -1)
     end
   end
   
@@ -272,7 +296,7 @@ function ModuleBrowser()
   
   
   
-  win = GtkWindow(hbox,"Module Viewer")
+  win = G_.object(builder,"mainWindow")
   show(win)
   
   moduleBrowser = ModuleBrowser(win)
