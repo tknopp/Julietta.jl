@@ -4,7 +4,7 @@
 
 using Gtk
 using Gtk.ShortNames
-#using GtkSourceWidget
+using GtkSourceWidget
 
 
 type PkgViewer <: Gtk.GtkWindowI
@@ -318,8 +318,53 @@ function SourceViewer()
   GtkSourceWidget.show_line_numbers!(v,true)
   GtkSourceWidget.auto_indent!(v,true)
   
-  win = GtkWindow(v,"Source Viewer")
+  sw = ScrolledWindow()
+  push!(sw,v)
+  
+  nb = Notebook()
+  push!(nb, sw, "tab _one")
+
+  
+  btnOpen = Button("Open")
+  
+  vbox = BoxLayout(:v)
+  push!(vbox,btnOpen)
+  push!(vbox,nb)
+  setproperty!(vbox,:expand,nb,true)
+  
+  win = GtkWindow(vbox,"Source Viewer")
   show(win)
+  showall(win)  
+  
+  signal_connect(btnOpen, "clicked") do widget
+    dlg = FileChooserDialog("Select file", NullContainer(), FileChooserAction.OPEN,
+                        Stock.CANCEL, Response.CANCEL,
+                        Stock.OPEN, Response.ACCEPT)
+    ret = run(dlg)
+    if ret == Response.ACCEPT
+      filename = Gtk.bytestring(Gtk._.filename(dlg),true)
+      txt = open(readall, filename)
+      
+      bNew = GtkSourceBuffer(l)
+      G_.text(bNew,txt,-1)
+      
+      vNew = GtkSourceView(bNew)
+  
+      GtkSourceWidget.show_line_numbers!(vNew,true)
+      GtkSourceWidget.auto_indent!(vNew,true)
+  
+      swNew = ScrolledWindow()
+      push!(swNew,vNew)      
+      
+      push!(nb, swNew, filename)
+      
+      showall(nb)   
+    end
+    destroy(dlg)
+  end
+  
+  
+
   
   sourceViewer = SourceViewer(win)
   Gtk.gc_move_ref(sourceViewer, win)
