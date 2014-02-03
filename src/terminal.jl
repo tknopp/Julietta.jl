@@ -9,7 +9,7 @@ type Terminal <: Gtk.GtkBoxI
   textView::TextView
 end
 
-@everywhere function redirect()
+function redirect()
   global rd
   rd, wr = redirect_stdout()
   global rderr
@@ -17,7 +17,7 @@ end
   return
 end
 
-@everywhere function readredirected()
+function readredirected()
   string(readavailable(rd),"\n",readavailable(rderr))
 end
 
@@ -37,24 +37,20 @@ function Terminal()
   
   #@spawnat 2 rd, wr = redirect_stdout()
   #@spawnat 2 rderr, wrerr = redirect_stderr()
-  #@spawnat 2 redirect()
+  redirect()
 
   function doev(timer,::Int32)
     @async begin
-      response = @fetchfrom 2 readredirected()  
+      response = readredirected()  
       show(response)
       if !isempty(response)
         insert!(textV,string(response,"\n"))
       end
-      #response = @fetchfrom 2 readavailable(rderr)  
-      #if !isempty(response)
-      #  insert!(textV,string(response,"\n"))
-      #end
     end
   end
 
-  #timeout = Base.TimeoutAsyncWork(doev)
-  #start_timer(timeout,1e-1,5e-3)  
+  timeout = Base.TimeoutAsyncWork(doev)
+  start_timer(timeout,1e-1,5e-3)  
   
   terminal = Terminal(vbox, entry, textV)
   

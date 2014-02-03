@@ -4,7 +4,7 @@ type ModuleBrowser <: Gtk.GtkWindowI
 end
 
 function ModuleBrowser()
-  Base.Help.init_help()
+  @async Base.Help.init_help()
 
   filename = joinpath(dirname(Base.source_path()),"moduleBrowser.ui")
   if !isfile(filename)
