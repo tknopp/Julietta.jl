@@ -25,7 +25,7 @@ function Workspace()
   G_.max_width(c4,80)
   push!(tv,c1,c2,c3,c4)
   
-  G_.sort_column_id(store,0,SortType.ASCENDING)
+  #G_.sort_column_id(store,0,SortType.ASCENDING)
 
   sw = ScrolledWindow()
   push!(sw,tv) 
@@ -34,7 +34,7 @@ function Workspace()
   push!(box,sw)
   setproperty!(box,:expand,sw,true)  
 
-  workspace = Workspace(box, store)
+  workspace = Workspace(box.handle, store)
 
   update!(workspace)
   
@@ -67,6 +67,6 @@ function VariableViewer()
   win = GtkWindow(work,"Variable Viewer")
   show(win)
   
-  variableViewer = VariableViewer(tv)
+  variableViewer = VariableViewer(tv.handle)
   Gtk.gc_move_ref(variableViewer, win)
 end

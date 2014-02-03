@@ -82,7 +82,7 @@ function JuliettaWindow()
     PkgViewer()
   end  
   
-  global julietta = JuliettaWindow(win,work,term,hist)
+  global julietta = JuliettaWindow(win.handle,work,term,hist)
   Gtk.gc_move_ref(julietta, win)
 end
 

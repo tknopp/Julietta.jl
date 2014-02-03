@@ -5,9 +5,9 @@ type PkgViewer <: Gtk.GtkWindowI
 end
 
 function PkgViewer()
-  filename = joinpath(dirname(Base.source_path()),"pkgviewer.xml")
+  filename = joinpath(dirname(Base.source_path()),"pkgviewer.ui")
   if !isfile(filename)
-    filename = Pkg.dir("JuliaTools.jl","src","pkgviewer.xml")
+    filename = Pkg.dir("Julietta.jl","src","pkgviewer.ui")
   end
   builder = Builder(filename)
   
@@ -25,7 +25,7 @@ function PkgViewer()
   G_.sort_column_id(c3,2)
   push!(tv,c1,c2,c3)
   
-  G_.sort_column_id(store,0,SortType.ASCENDING)
+  #G_.sort_column_id(store,0,SortType.ASCENDING)
   
   sw = G_.object(builder,"swAvailable")
   push!(sw,tv)  
@@ -119,6 +119,6 @@ function PkgViewer()
   
   @async loadPkg()
   
-  pkgViewer = PkgViewer(win,builder,store)
+  pkgViewer = PkgViewer(win.handle,builder,store)
   Gtk.gc_move_ref(pkgViewer, win)
 end

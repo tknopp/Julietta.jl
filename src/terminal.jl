@@ -34,25 +34,31 @@ function Terminal()
   push!(vbox,entry)
   push!(vbox,sw)
   setproperty!(vbox,:expand,sw,true)
-  
-  #@spawnat 2 rd, wr = redirect_stdout()
-  #@spawnat 2 rderr, wrerr = redirect_stderr()
-  redirect()
+    
+  rd, wr = redirect_stdout()
 
-  function doev(timer,::Int32)
-    @async begin
-      response = readredirected()  
-      show(response)
-      if !isempty(response)
-        insert!(textV,string(response,"\n"))
+  @schedule begin
+     while(true)
+        response = readavailable(rd)
+        if !isempty(response)
+          response = replace(response, "From worker 2:	", "")
+          insert!(textV,string(response)) #,"\n"
+        end
+     end
+   end
+  
+  # Redirect stderr on worker  
+  @spawnat 2 begin
+    rderr, wrerr = redirect_stderr()
+    @schedule begin
+      while(true)
+         response = readavailable(rderr)
+         print(response)
       end
     end
   end
-
-  timeout = Base.TimeoutAsyncWork(doev)
-  start_timer(timeout,1e-1,5e-3)  
   
-  terminal = Terminal(vbox, entry, textV)
+  terminal = Terminal(vbox.handle, entry, textV)
   
   signal_connect(entry, "key_release_event") do widget, event, other...
   

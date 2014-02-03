@@ -73,6 +73,6 @@ function SourceViewer()
   
 
   
-  sourceViewer = SourceViewer(win)
+  sourceViewer = SourceViewer(win.handle)
   Gtk.gc_move_ref(sourceViewer, win)
 end

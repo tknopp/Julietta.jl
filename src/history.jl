@@ -22,9 +22,9 @@ function History()
   push!(box,sw)
   setproperty!(box,:expand,sw,true)
 
-  history = History(box, store2)
-  
-  open("/Users/knopp/.julia_history") do stream
+  history = History(box.handle, store2)
+  hist_filename = @windows? joinpath(ENV["HOMEDRIVE"],ENV["HOMEPATH"],".julia_history") : joinpath(ENV["HOME"],".julia_history")
+  open(hist_filename) do stream
     for cmd in eachline(stream)
       push!(history,strip(cmd))
     end
