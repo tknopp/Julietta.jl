@@ -20,7 +20,7 @@ function ModuleBrowser()
   G_.sort_column_id(cModules1,0)
   push!(tvModules,cModules1)
   
-  #G_.sort_column_id(storeModules,0,SortType.ASCENDING)
+  G_.sort_column_id(storeModules,0,SortType.ASCENDING)
   
   variables = names(Main)
   
@@ -40,7 +40,7 @@ function ModuleBrowser()
   G_.sort_column_id(cContent2,1)
   push!(tvContent,cContent1,cContent2)
   
-  #G_.sort_column_id(storeContent,0,SortType.ASCENDING)  
+  G_.sort_column_id(storeContent,0,SortType.ASCENDING)  
   
   swModules = G_.object(builder,"swModules")
   push!(swModules,tvModules)    

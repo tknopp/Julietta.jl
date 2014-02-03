@@ -5,7 +5,6 @@ import Base.push!
 
 using Gtk
 using Gtk.ShortNames
-using GtkSourceWidget
 
 addprocs(1)
 

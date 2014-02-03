@@ -25,7 +25,7 @@ function PkgViewer()
   G_.sort_column_id(c3,2)
   push!(tv,c1,c2,c3)
   
-  #G_.sort_column_id(store,0,SortType.ASCENDING)
+  G_.sort_column_id(store,0,SortType.ASCENDING)
   
   sw = G_.object(builder,"swAvailable")
   push!(sw,tv)  
