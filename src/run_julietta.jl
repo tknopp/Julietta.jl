@@ -1,6 +1,4 @@
-unshift!(DL_LOAD_PATH,"/opt/local/lib")
-
-include("Julietta.jl")
+using Julietta
 
 j = JuliettaWindow()
 

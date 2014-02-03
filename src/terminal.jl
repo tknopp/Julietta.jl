@@ -9,18 +9,6 @@ type Terminal <: Gtk.GtkBoxI
   textView::TextView
 end
 
-function redirect()
-  global rd
-  rd, wr = redirect_stdout()
-  global rderr
-  rderr, wrerr = redirect_stderr()
-  return
-end
-
-function readredirected()
-  string(readavailable(rd),"\n",readavailable(rderr))
-end
-
 function Terminal()
   
   entry = Entry()
@@ -79,9 +67,10 @@ function execute(term::Terminal, cmd::String)
   #println("execute cmd...")
   if julietta != nothing
     push!(julietta.hist, cmd)
+    start(julietta.spinner)
   end
+  G_.sensitive(term.entry, false)
 
-  G_.text(term.entry,"")
   outputTxt = string("julia> ", cmd, "\n" )
   #insert!(textBuf,G_.end_iter(textBuf),outputTxt)
   insert!(term.textView,outputTxt)
@@ -97,6 +86,10 @@ function execute(term::Terminal, cmd::String)
     if julietta != nothing
       #println("execute cmd...2")
       update!(julietta.work)
+
+      stop(julietta.spinner)
+      G_.sensitive(julietta.term.entry, true)
+      G_.text(julietta.term.entry,"")      
     end
   end
 end

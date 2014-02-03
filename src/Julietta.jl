@@ -1,12 +1,13 @@
+# Issue with module in eval in workspace
 #module Julietta
 
-#export PkgViewer, VariableViewer, ModuleBrowser, SourceViewer
 import Base.push!
+
+#export PkgViewer, VariableViewer, ModuleBrowser, SourceViewer, JuliettaWindow
 
 using Gtk
 using Gtk.ShortNames
 
-addprocs(1)
 
 include("pkg.jl")
 include("history.jl")
@@ -21,11 +22,17 @@ type JuliettaWindow <: Gtk.GtkWindowI
   work::Workspace
   term::Terminal
   hist::History
+  spinner::Spinner
 end
 
 julietta = nothing
 
-function JuliettaWindow() 
+function JuliettaWindow()
+  if nprocs() == 1
+    addprocs(1)
+  end
+  remotecall_fetch(2, Base.load_juliarc)
+
   hist = History()      
   work = Workspace()
   G_.border_width(work,5)
@@ -48,10 +55,13 @@ function JuliettaWindow()
   btnEdit = ToolButton("gtk-edit")
   btnHelp = ToolButton("gtk-help")
   btnPkg = ToolButton("gtk-preferences") 
-    
+  spItem = ToolItem()
+  spinner = Spinner()
+  G_.size_request(spinner, 23,-1)
+  push!(spItem,spinner) 
   
   toolbar = Toolbar()
-  push!(toolbar,btnEdit,btnPkg,btnHelp)
+  push!(toolbar,btnEdit,btnPkg,btnHelp,SeparatorToolItem(),spItem)
   #G_.style(toolbar,ToolbarStyle.BOTH)  
   
   
@@ -81,7 +91,7 @@ function JuliettaWindow()
     PkgViewer()
   end  
   
-  global julietta = JuliettaWindow(win.handle,work,term,hist)
+  global julietta = JuliettaWindow(win.handle,work,term,hist,spinner)
   Gtk.gc_move_ref(julietta, win)
 end
 

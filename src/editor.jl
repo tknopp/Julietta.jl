@@ -40,12 +40,39 @@ function open(doc::SourceDocument)
     return (ret == Response.ACCEPT)
 end
 
-function save(doc::SourceDocument)
-
+function text(doc::SourceDocument)
+  itStart = Gtk.GtkTextIter(doc.buffer)
+  itEnd = Gtk.GtkTextIter(doc.buffer)
+  ccall((:gtk_text_buffer_get_end_iter,Gtk.libgtk),Void,
+        (Ptr{Gtk.GObject},Ptr{Void}),doc.buffer,itEnd.handle)
+  txt = bytestring( G_.text(doc.buffer, itStart.handle, itEnd.handle, false) )
 end
 
-function saveas(doc::SourceDocument, filename::String)
+function save(doc::SourceDocument)
+  stream = open(doc.filename, "w")
+  write(stream,text(doc))
+  close(stream)
+end
 
+function saveas(doc::SourceDocument)
+  dlg = FileChooserDialog("Select file", NullContainer(), FileChooserAction.SAVE,
+                               Stock.CANCEL, Response.CANCEL,
+                               Stock.SAVE, Response.ACCEPT)
+  G_.do_overwrite_confirmation(dlg,true)
+    
+  if isempty(doc.filename)
+    G_.current_name(dlg,"Untitled document")
+  else
+    G_.filename(dlg,doc.filename)
+  end
+  
+  ret = run(dlg)
+  if ret == Response.ACCEPT
+    doc.filename = Gtk.bytestring(Gtk._.filename(dlg),true)
+    save(doc)
+  end
+  destroy(dlg)
+  
 end
 
 function close(doc::SourceDocument)
@@ -61,8 +88,12 @@ type SourceViewer <: Gtk.GtkWindowI
 end
 
 function push!(sv::SourceViewer, doc::SourceDocument)
-  push!(sv.notebook, doc, basename(doc.filename))
+  push!(sv.notebook, doc, isempty(doc.filename) ? "New File" : basename(doc.filename))
   push!(sv.documents, doc)
+  i = pagenumber(sv.notebook, doc)
+  G_.current_page(sv.notebook, i)
+  G_.tab_reorderable(sv.notebook,doc,true)
+  
   showall(sv.notebook)   
 end
 
@@ -84,10 +115,12 @@ function SourceViewer()
   btnSaveAs = ToolButton("gtk-save-as")  
   btnUndo = ToolButton("gtk-undo")
   btnRedo = ToolButton("gtk-redo")
+  btnRun = ToolButton("gtk-media-play")
 
   toolbar = Toolbar()
   push!(toolbar,btnOpen,btnSave,btnSaveAs,SeparatorToolItem())
-  push!(toolbar,btnUndo,btnRedo)
+  push!(toolbar,btnUndo,btnRedo,SeparatorToolItem())
+  push!(toolbar,btnRun)
   #G_.style(toolbar,ToolbarStyle.BOTH)  
   
   
@@ -96,7 +129,7 @@ function SourceViewer()
   push!(vbox,nb)
   setproperty!(vbox,:expand,nb,true)
   
-  win = GtkWindow("Source Viewer",600,400)
+  win = GtkWindow("Source Viewer",800,768)
   push!(win,vbox)
   showall(win)  
   
@@ -104,6 +137,7 @@ function SourceViewer()
   
   push!(sourceViewer, SourceDocument(l,s))
   currentDoc = sourceViewer.documents[1]
+  currentPage = 1
   
   signal_connect(btnOpen, "clicked") do widget
     doc = SourceDocument(l,s)
@@ -111,6 +145,14 @@ function SourceViewer()
       push!(sourceViewer, doc)
     end
   end
+  
+  signal_connect(btnSave, "clicked") do widget
+    save(currentDoc)
+  end  
+  
+  signal_connect(btnSaveAs, "clicked") do widget
+    saveas(currentDoc)
+  end    
   
   signal_connect(btnUndo, "clicked") do widget
     undo!(currentDoc.buffer) #TODO use active buffer
@@ -128,6 +170,19 @@ function SourceViewer()
     G_.sensitive(btnUndo, canundo(currentDoc.buffer))
     G_.sensitive(btnRedo, canredo(currentDoc.buffer))
   end  
+  
+  signal_connect(nb, "switch-page") do widget, page, page_num, args...
+    currentPage = page_num
+    currentDoc = page
+  end
+  
+  
+  signal_connect(btnRun, "clicked") do widget
+    script = text(currentDoc)
+    if julietta != nothing
+      execute(julietta.term, script)
+    end
+  end
   
 
   Gtk.gc_move_ref(sourceViewer, win)

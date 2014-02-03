@@ -9,7 +9,6 @@ function Workspace()
   
   tv = TreeView(store)
   r1 = CellRendererText()
-  #setproperty!(r1,:wrap_width, 20)
   c1 = TreeViewColumn("Name", r1, {"text" => 0})
   c2 = TreeViewColumn("Type", r1,{"text" => 1})
   c3 = TreeViewColumn("Size", r1,{"text" => 2})
@@ -50,10 +49,13 @@ function update!(work::Workspace)
   #println(variables)
   
   for v in variables
-    y = remotecall_fetch(2, eval, v)
-    #y = eval(v)
-    if string(typeof(y)) != "Module"
-      push!(work.store, (string(v), string(typeof(y)),string(sizeof(y)), string(y)) )  
+    row = @fetchfrom 2 begin
+      y=eval(v)
+      (string(v), string(typeof(y)),string(sizeof(y)), string(y)) 
+    end
+    
+    if row[2] != "Module"
+      push!(work.store, row )  
     end
   end
 end
