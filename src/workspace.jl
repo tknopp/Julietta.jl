@@ -12,7 +12,7 @@ function Workspace()
   c1 = TreeViewColumn("Name", r1, {"text" => 0})
   c2 = TreeViewColumn("Type", r1,{"text" => 1})
   c3 = TreeViewColumn("Size", r1,{"text" => 2})
-  c4 = TreeViewColumn("Value", r1,{"text" => 3})
+  c4 = TreeViewColumn("Value/Size", r1,{"text" => 3})
   G_.sort_column_id(c1,0)
   G_.resizable(c1,true)
   G_.sort_column_id(c2,1)
@@ -51,7 +51,16 @@ function update!(work::Workspace)
   for v in variables
     row = @fetchfrom 2 begin
       y=eval(v)
-      (string(v), string(typeof(y)),string(sizeof(y)), string(y)) 
+      if isa(y,Array)
+        val = ""
+        for d=1:(ndims(y)-1)
+          val *= string(size(y,d))*"x"
+        end
+        val *= string(size(y,ndims(y)))
+      else
+        val = string(y)
+      end
+      (string(v),string(typeof(y)),string(sizeof(y)), val) 
     end
     
     if row[2] != "Module"

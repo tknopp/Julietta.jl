@@ -23,6 +23,7 @@ type JuliettaWindow <: Gtk.GtkWindowI
   term::Terminal
   hist::History
   spinner::Spinner
+  editor
 end
 
 julietta = nothing
@@ -37,20 +38,19 @@ function JuliettaWindow()
   work = Workspace()
   G_.border_width(work,5)
   G_.border_width(hist,5)
-  vboxL = BoxLayout(:v)
-  push!(vboxL,work)
-  push!(vboxL,hist)
-  setproperty!(vboxL,:expand,work,true)
-  setproperty!(vboxL,:expand,hist,true)
+  vboxL = Paned(:v)
+  vboxL[1] = work
+  vboxL[2] = hist
+  G_.position(vboxL,400)
   G_.size_request(vboxL, 350,-1)
   
   term = Terminal()
   G_.border_width(term,5)
 
-  hbox = BoxLayout(:h)
-  push!(hbox,vboxL)
-  push!(hbox,term)
-  setproperty!(hbox,:expand,term,true)
+  hbox = Paned(:h)
+  hbox[1] = vboxL
+  hbox[2] = term
+  G_.position(hbox,350)
   
   btnEdit = ToolButton("gtk-edit")
   btnHelp = ToolButton("gtk-help")
@@ -58,11 +58,17 @@ function JuliettaWindow()
   spItem = ToolItem()
   spinner = Spinner()
   G_.size_request(spinner, 23,-1)
-  push!(spItem,spinner) 
+  push!(spItem,spinner)
+  spSep = SeparatorToolItem()
+
+  setproperty!(spSep,:draw,false)
+  setproperty!(spItem,:margin, 5)
   
   toolbar = Toolbar()
-  push!(toolbar,btnEdit,btnPkg,btnHelp,SeparatorToolItem(),spItem)
-  #G_.style(toolbar,ToolbarStyle.BOTH)  
+  push!(toolbar,btnEdit,btnPkg,btnHelp)
+  push!(toolbar,spSep,spItem)
+  G_.expand(spSep,true)
+  G_.style(toolbar,ToolbarStyle.ICONS) #BOTH  
   
   
   vbox = BoxLayout(:v)
@@ -75,12 +81,26 @@ function JuliettaWindow()
   push!(win,vbox)
   showall(win)
   
+  global julietta = JuliettaWindow(win.handle,work,term,hist,spinner,nothing)  
+  
   signal_connect(win,"destroy") do object, args...
    exit()
   end
   
   signal_connect(btnEdit, "clicked") do widget
-    SourceViewer()
+    if julietta != nothing
+      if julietta.editor == nothing
+        julietta.editor = SourceViewer()
+        
+        signal_connect(julietta.editor,"delete-event") do args...
+          destroy(julietta.editor)
+          julietta.editor = nothing
+        end  
+        
+      end
+
+      present(julietta.editor)
+    end
   end
 
   signal_connect(btnHelp, "clicked") do widget
@@ -91,7 +111,7 @@ function JuliettaWindow()
     PkgViewer()
   end  
   
-  global julietta = JuliettaWindow(win.handle,work,term,hist,spinner)
+
   Gtk.gc_move_ref(julietta, win)
 end
 

@@ -110,6 +110,7 @@ function SourceViewer()
   
   nb = Notebook()
   
+  btnNew = ToolButton("gtk-new")
   btnOpen = ToolButton("gtk-open")
   btnSave = ToolButton("gtk-save")
   btnSaveAs = ToolButton("gtk-save-as")  
@@ -118,7 +119,7 @@ function SourceViewer()
   btnRun = ToolButton("gtk-media-play")
 
   toolbar = Toolbar()
-  push!(toolbar,btnOpen,btnSave,btnSaveAs,SeparatorToolItem())
+  push!(toolbar,btnNew,btnOpen,btnSave,btnSaveAs,SeparatorToolItem())
   push!(toolbar,btnUndo,btnRedo,SeparatorToolItem())
   push!(toolbar,btnRun)
   #G_.style(toolbar,ToolbarStyle.BOTH)  
@@ -138,6 +139,10 @@ function SourceViewer()
   push!(sourceViewer, SourceDocument(l,s))
   currentDoc = sourceViewer.documents[1]
   currentPage = 1
+  
+  signal_connect(btnNew, "clicked") do widget
+    push!(sourceViewer, SourceDocument(l,s))
+  end  
   
   signal_connect(btnOpen, "clicked") do widget
     doc = SourceDocument(l,s)

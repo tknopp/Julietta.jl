@@ -13,10 +13,10 @@ function Terminal()
   
   entry = Entry()
   textBuf = TextBuffer()
-  textV = TextView(textBuf)
+  textView = TextView(textBuf)
   
   sw = ScrolledWindow()
-  push!(sw,textV)        
+  push!(sw,textView)        
   
   vbox = BoxLayout(:v)
   push!(vbox,entry)
@@ -30,7 +30,7 @@ function Terminal()
         response = readavailable(rd)
         if !isempty(response)
           response = replace(response, "From worker 2:	", "")
-          insert!(textV,string(response)) #,"\n"
+          insert!(textView,string(response)) #,"\n"
         end
      end
    end
@@ -46,7 +46,7 @@ function Terminal()
     end
   end
   
-  terminal = Terminal(vbox.handle, entry, textV)
+  terminal = Terminal(vbox.handle, entry, textView)
   
   signal_connect(entry, "key_release_event") do widget, event, other...
   
@@ -56,8 +56,12 @@ function Terminal()
       execute(terminal,cmd)
     end
     0
-  end  
+  end
   
+  signal_connect(textView, "size-allocate") do widget, event, other...
+    adj = G_.vadjustment(sw)
+    G_.value(adj,getproperty(adj,:upper,Float64) - getproperty(adj,:page_size,Float64) )
+  end   
   
   Gtk.gc_move_ref(terminal, vbox)
 end
