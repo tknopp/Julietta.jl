@@ -37,6 +37,19 @@ function Workspace()
 
   update!(workspace)
   
+
+  signal_connect(tv, "button-press-event") do widget, event, other...  
+    if event.button==3
+      contrast = MenuItem("Adjust contrast...")
+      popupmenu = Menu()
+      push!(popupmenu, contrast)
+      popup(popupmenu, event)      
+    end
+    false
+  end
+  
+  
+  
   Gtk.gc_move_ref(workspace, box)
 end
 
@@ -63,7 +76,7 @@ function update!(work::Workspace)
       (string(v),string(typeof(y)),string(sizeof(y)), val) 
     end
     
-    if row[2] != "Module"
+    if isa(row,Tuple) && row[2] != "Module"
       push!(work.store, row )  
     end
   end

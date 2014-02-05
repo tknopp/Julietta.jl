@@ -36,8 +36,8 @@ function JuliettaWindow()
 
   hist = History()      
   work = Workspace()
-  G_.border_width(work,5)
-  G_.border_width(hist,5)
+  #G_.border_width(work,5)
+  #G_.border_width(hist,5)
   vboxL = Paned(:v)
   vboxL[1] = work
   vboxL[2] = hist
@@ -45,12 +45,16 @@ function JuliettaWindow()
   G_.size_request(vboxL, 350,-1)
   
   term = Terminal()
-  G_.border_width(term,5)
+  #G_.border_width(term,5)
+  #setproperty!(term,:margin, 5)
 
   hbox = Paned(:h)
   hbox[1] = vboxL
   hbox[2] = term
   G_.position(hbox,350)
+  #setproperty!(hbox,"left-margin", 5)
+  #setproperty!(hbox,"upper-margin", 5)
+  #setproperty!(hbox,"lower-margin", 5)
   
   btnEdit = ToolButton("gtk-edit")
   btnHelp = ToolButton("gtk-help")
