@@ -1,7 +1,10 @@
 
 type History <: Gtk.GtkBoxI
   handle::Ptr{Gtk.GObjectI}
+  filename::String
   store::ListStore
+  commands::Vector{String}
+  iter::Int
 end
 
 function History()
@@ -22,11 +25,13 @@ function History()
   push!(box,sw)
   setproperty!(box,:expand,sw,true)
 
-  history = History(box.handle, store)
+  commands = String[]
   hist_filename = @windows? joinpath(ENV["HOMEDRIVE"],ENV["HOMEPATH"],".julia_history") : joinpath(ENV["HOME"],".julia_history")
+  history = History(box.handle, hist_filename, store, commands, length(commands))
+
   open(hist_filename) do stream
     for cmd in eachline(stream)
-      push!(history,strip(cmd))
+      push!(history,strip(cmd),true)
     end
   end
   
@@ -42,7 +47,7 @@ function History()
         execute(julietta.term,cmd)
       end  
     end
-    0
+    false
   end
   
   signal_connect(tv, "size-allocate") do widget, event, other...
@@ -53,6 +58,26 @@ function History()
   Gtk.gc_move_ref(history, box)
 end
 
-function push!(hist::History,cmd::String)
-  push!(hist.store, (cmd,) )  
+function push!(hist::History,cmd::String, silent::Bool=false)
+  push!(hist.store, (cmd,) )
+  push!(hist.commands,cmd)
+  hist.iter = length(hist.commands)
+  
+  if !silent
+    stream = open(hist.filename, "a")
+    write(stream,cmd*"\n")
+    close(stream)
+  end
 end
+
+function prevcmd!(hist::History)
+  hist.iter = (hist.iter == 0) ? 0 : hist.iter - 1
+  hist.commands[hist.iter]
+end
+
+function nextcmd!(hist::History)
+  hist.iter = (hist.iter == length(hist.commands)) ? length(hist.commands) : hist.iter + 1
+  hist.commands[hist.iter]
+end
+
+

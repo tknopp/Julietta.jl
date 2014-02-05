@@ -91,6 +91,8 @@ function push!(sv::SourceViewer, doc::SourceDocument)
   push!(sv.notebook, doc, isempty(doc.filename) ? "New File" : basename(doc.filename))
   push!(sv.documents, doc)
   i = pagenumber(sv.notebook, doc)
+  
+  showall(doc)
   G_.current_page(sv.notebook, i)
   G_.tab_reorderable(sv.notebook,doc,true)
   
@@ -117,11 +119,27 @@ function SourceViewer()
   btnUndo = ToolButton("gtk-undo")
   btnRedo = ToolButton("gtk-redo")
   btnRun = ToolButton("gtk-media-play")
+  btnIndent = ToolButton("gtk-indent")
+  btnUnindent = ToolButton("gtk-unindent")  
 
+  toolItemCbx = ToolItem()
+  cbxShowLineNumbers = CheckButton("Show line numbers")
+  cbxHighlightCurrentLine = CheckButton("Highlight current line")
+  
+  vboxCbx = BoxLayout(:v)
+  push!(vboxCbx,cbxShowLineNumbers)
+  push!(vboxCbx,cbxHighlightCurrentLine)
+  setproperty!(cbxShowLineNumbers,:active,true)  
+  setproperty!(cbxHighlightCurrentLine,:active,false)
+  
+  push!(toolItemCbx,vboxCbx)
+  
   toolbar = Toolbar()
   push!(toolbar,btnNew,btnOpen,btnSave,btnSaveAs,SeparatorToolItem())
   push!(toolbar,btnUndo,btnRedo,SeparatorToolItem())
-  push!(toolbar,btnRun)
+  push!(toolbar,btnRun,SeparatorToolItem())
+  push!(toolbar,btnIndent,btnUnindent,SeparatorToolItem()) 
+  push!(toolbar,toolItemCbx)
   #G_.style(toolbar,ToolbarStyle.BOTH)  
   
   
@@ -169,7 +187,15 @@ function SourceViewer()
     redo!(currentDoc.buffer) #TODO use active buffer
     G_.sensitive(btnUndo, canundo(currentDoc.buffer))
     G_.sensitive(btnRedo, canredo(currentDoc.buffer))    
-  end  
+  end
+  
+  signal_connect(btnIndent, "clicked") do widget
+    indent!(currentDoc)
+  end
+  
+  signal_connect(btnUnindent, "clicked") do widget
+    #TODO
+  end    
 
   signal_connect(currentDoc.buffer, "changed") do widget, args...
     G_.sensitive(btnUndo, canundo(currentDoc.buffer))
@@ -189,6 +215,15 @@ function SourceViewer()
     end
   end
   
-
+  signal_connect(cbxShowLineNumbers, "toggled") do widget
+    #TODO: Do it in all views
+    show_line_numbers!(currentDoc.view, getproperty(cbxShowLineNumbers,:active,Bool) )
+  end
+  
+  signal_connect(cbxHighlightCurrentLine, "toggled") do widget
+    #TODO: Do it in all views
+    highlight_current_line!(currentDoc.view, getproperty(cbxHighlightCurrentLine,:active,Bool) )
+  end
+  
   Gtk.gc_move_ref(sourceViewer, win)
 end

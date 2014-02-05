@@ -3,7 +3,7 @@ import REPLCompletions
 
 function get_completion(prefix)
   liststore = ListStore(String)
-  c,r = REPLCompletions.completions(prefix,endof(prefix))
+  c,r = @fetchfrom 2 REPLCompletions.completions(prefix,endof(prefix))
   for s in c
       push!(liststore, (s,) )  
   end
@@ -55,7 +55,7 @@ function Terminal()
   
   completion = EntryCompletion()
   G_.model(completion,GtkNullContainer())
-  G_.inline_selection(completion,true)
+  #G_.inline_selection(completion,true)
   G_.completion(entry,completion)
   G_.minimum_key_length(completion,1)
   G_.text_column(completion,0)
@@ -63,43 +63,65 @@ function Terminal()
   
   terminal = Terminal(vbox.handle, entry, textView)
   
+  execute(terminal,"import REPLCompletions")
+  execute(terminal,"using Winston")
+  
   signal_connect(entry, "key-press-event") do widget, event, other...
   
     if event.keyval == Gtk.GdkKeySyms.Return
       cmd = bytestring(G_.text(terminal.entry))
 
       execute(terminal,cmd)
+      return true
     end
     
     if event.keyval == Gtk.GdkKeySyms.Tab
 		prefix = bytestring(G_.text(terminal.entry))
         
         if !completed
-          liststore = get_completion(prefix)
-        
-    	  if length(liststore) == 0
-			 completed = true
-		  end
-		  if length(liststore) == 1
-		    c,r = REPLCompletions.completions(prefix,endof(prefix))
-		    G_.text(terminal.entry,c[1])
-		    G_.position(terminal.entry,-1)
-			completed = true
-		  else
-			#	self.completing = prefix
-		    G_.model(completion,liststore)
-		    complete(completion)
-		    
-			# GtkEntryCompletion apparently needs a little nudge
-			# gtk.main_do_event(gtk.gdk.Event(gtk.gdk.KEY_PRESS))
-		  end
-		  return true
+          @async begin
+              liststore = get_completion(prefix)
+            
+              if length(liststore) == 0
+                 completed = true
+              end
+              if length(liststore) == 1
+                c,r = @fetchfrom 2 REPLCompletions.completions(prefix,endof(prefix))
+                G_.text(terminal.entry,c[1])
+                G_.position(terminal.entry,-1)
+                completed = true
+              end
+                #	self.completing = prefix
+                #G_.model(completion,liststore)
+                #complete(completion)
+                
+                # GtkEntryCompletion apparently needs a little nudge
+                # gtk.main_do_event(gtk.gdk.Event(gtk.gdk.KEY_PRESS))
+                #end
+		  end 
 		else
 		  G_.model(completion,GtkNullContainer())
-		  return true #false
 		end
-    end    
-    0
+        return true
+    end
+    
+    if event.keyval == Gtk.GdkKeySyms.Up
+      if julietta != nothing
+        cmd = prevcmd!(julietta.hist)
+        G_.text(terminal.entry,cmd)
+        G_.position(terminal.entry,-1)
+        return true
+      end
+    end
+
+    if event.keyval == Gtk.GdkKeySyms.Down
+        cmd = nextcmd!(julietta.hist)
+        G_.text(terminal.entry,cmd)
+        G_.position(terminal.entry,-1)
+        return true
+    end
+    
+    false
   end
   
   signal_connect(entry, "changed") do widget
@@ -119,40 +141,31 @@ function Terminal()
 		#		not self.completed):        
         
         if !completed && !selection_bounds(entry)
-          liststore = get_completion(prefix)
+          @async begin
+            liststore = get_completion(prefix)
         
-    	  if length(liststore) == 0
-			 completed = true
-		  end
-		  #if length(liststore) == 1
-		  #  c,r = REPLCompletions.completions(prefix,endof(prefix))
-		  #  G_.text(terminal.entry,c[1])
-		  #  G_.position(terminal.entry,-1)
-		#	completed = true
-		 # else
-			#	self.completing = prefix
+    	    if length(liststore) == 0
+		    	 completed = true
+		    end
+
 		    G_.model(completion,liststore)
 		    complete(completion)
-		    
-			# GtkEntryCompletion apparently needs a little nudge
-			# gtk.main_do_event(gtk.gdk.Event(gtk.gdk.KEY_PRESS))
-		  #end
-		  return true
+          end
 		else
 		  G_.model(completion,GtkNullContainer())
-		  return true #false
 		end    
-    
+    return true
   end
   
   signal_connect(completion, "match-selected") do completion, model, iter
 		#"""@note: This doesn't get called on inline completion."""
 		#print model[iter][0], 'was selected'
-		println("Huuuhuuu ")
+		#println("Huuuhuuu ")
 		completed = true
 		
 		#self.completing = ''
-		#completion.set_model(None)
+        G_.model(completion,GtkNullContainer())
+        
 		return    
   end
   

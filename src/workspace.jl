@@ -37,16 +37,38 @@ function Workspace()
 
   update!(workspace)
   
+  selection = G_.selection(tv)   
 
   signal_connect(tv, "button-press-event") do widget, event, other...  
-    if event.button==3
-      contrast = MenuItem("Adjust contrast...")
-      popupmenu = Menu()
-      push!(popupmenu, contrast)
-      popup(popupmenu, event)      
+    if event.button==3    
+      ret, path = Gtk.path_at_pos(tv,int32(event.x),int32(event.y))
+
+      if !ret
+        return false
+      end
+      
+      ret, it = Gtk.iter(store, path)
+      var = store[it][1]
+      typ = store[it][2]
+        
+      if contains(typ,"Array")
+         item = MenuItem("plot ...")
+          
+         signal_connect(item, :activate) do widget
+            if julietta.term != nothing
+              execute(julietta.term, "display(plot(" * var * "))")
+            end
+         end
+          
+         popupmenu = Menu()
+         push!(popupmenu, item)
+         popup(popupmenu, event)          
+
+      end   
     end
     false
   end
+
   
   
   
