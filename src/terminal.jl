@@ -13,12 +13,14 @@ end
 type Terminal <: Gtk.GtkBoxI
   handle::Ptr{Gtk.GObjectI}
   entry::Entry
+  combo::GtkComboBoxText
   textView::TextView
 end
 
 function Terminal()
-  
-  entry = Entry()
+
+  combo = GtkComboBoxText(true)
+  entry = G_.child(combo)
   textBuf = TextBuffer()
   textView = TextView(textBuf)
   
@@ -26,7 +28,7 @@ function Terminal()
   push!(sw,textView)        
   
   vbox = BoxLayout(:v)
-  push!(vbox,entry)
+  push!(vbox,combo)
   push!(vbox,sw)
   setproperty!(vbox,:expand,sw,true)
     
@@ -61,10 +63,10 @@ function Terminal()
   G_.text_column(completion,0)
   completed = false
   
-  terminal = Terminal(vbox.handle, entry, textView)
+  terminal = Terminal(vbox.handle, entry, combo, textView)
   
   execute(terminal,"import REPLCompletions")
-  execute(terminal,"using Winston")
+  #execute(terminal,"using Winston")
   
   signal_connect(entry, "key-press-event") do widget, event, other...
   
@@ -178,10 +180,13 @@ function Terminal()
 end
 
 
-function execute(term::Terminal, cmd::String)
+function execute(term::Terminal, cmd::String, silent::Bool=false)
   #println("execute cmd...")
   if julietta != nothing
-    push!(julietta.hist, cmd)
+    if !silent
+      push!(julietta.hist, cmd)
+      push!(term.combo,cmd)
+    end
     start(julietta.spinner)
   end
   G_.sensitive(term.entry, false)
@@ -205,7 +210,7 @@ function execute(term::Terminal, cmd::String)
       repr(value)
     end
     
-    if s != "nothing" && !endswith(cmd,";")
+    if s != "nothing" && !endswith(cmd,";") && !silent
       println(s)
     end
     

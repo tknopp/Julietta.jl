@@ -24,6 +24,13 @@ function SourceDocument(lang::GtkSourceLanguage, scheme::GtkSourceStyleScheme)
   Gtk.gc_move_ref(sourceDocument, sw)
 end
 
+function open(doc::SourceDocument, filename::String)
+  doc.filename = filename
+  txt = open(readall, doc.filename)
+      
+  G_.text(doc.buffer,txt,-1)
+end
+
 function open(doc::SourceDocument)
     dlg = FileChooserDialog("Select file", NullContainer(), FileChooserAction.OPEN,
                         Stock.CANCEL, Response.CANCEL,
@@ -85,16 +92,30 @@ type SourceViewer <: Gtk.GtkWindowI
   handle::Ptr{Gtk.GObjectI}
   documents::Vector{SourceDocument}
   notebook::Notebook
+  lang
+  style
 end
 
 function push!(sv::SourceViewer, doc::SourceDocument)
-  push!(sv.notebook, doc, isempty(doc.filename) ? "New File" : basename(doc.filename))
+
+  hbox = BoxLayout(:h)
+  push!(hbox,Label(isempty(doc.filename) ? "New File" : basename(doc.filename)))
+  btnClose = ToolButton("gtk-close")
+  push!(hbox,btnClose)
+  G_.size_request(btnClose, 10,10)  
+
+  push!(sv.notebook, doc, hbox)
   push!(sv.documents, doc)
   i = pagenumber(sv.notebook, doc)
   
   showall(doc)
   G_.current_page(sv.notebook, i)
   G_.tab_reorderable(sv.notebook,doc,true)
+  
+  signal_connect(btnClose, "clicked") do widget
+    i = pagenumber(sv.notebook, doc)
+    splice!(sv.notebook,i)
+  end  
   
   showall(sv.notebook)   
 end
@@ -152,7 +173,7 @@ function SourceViewer()
   push!(win,vbox)
   showall(win)  
   
-  sourceViewer = SourceViewer(win.handle, documents, nb) 
+  sourceViewer = SourceViewer(win.handle, documents, nb, l, s) 
   
   push!(sourceViewer, SourceDocument(l,s))
   currentDoc = sourceViewer.documents[1]
@@ -226,4 +247,10 @@ function SourceViewer()
   end
   
   Gtk.gc_move_ref(sourceViewer, win)
+end
+
+function open(viewer::SourceViewer, filename::String)
+  doc = SourceDocument(viewer.lang, viewer.style)
+  open(doc, filename)
+  push!(viewer,doc)
 end

@@ -15,17 +15,19 @@ include("workspace.jl")
 include("modulebrowser.jl")
 include("editor.jl")
 include("terminal.jl")
-
+include("filebrowser.jl")
 
 type JuliettaWindow <: Gtk.GtkWindowI
   handle::Ptr{Gtk.GObjectI}
   work::Workspace
   term::Terminal
   hist::History
+  browser::FileBrowser
   spinner::Spinner
   editor
 end
 
+# This is the global Julietta instance
 julietta = nothing
 
 function JuliettaWindow()
@@ -36,20 +38,26 @@ function JuliettaWindow()
 
   hist = History()      
   work = Workspace()
+  browser = FileBrowser()
   #G_.border_width(work,5)
   #G_.border_width(hist,5)
-  vboxL = Paned(:v)
-  vboxL[1] = work
-  vboxL[2] = hist
-  G_.position(vboxL,400)
-  G_.size_request(vboxL, 350,-1)
+  panedL1 = Paned(:v)
+  panedL1[1] = work
+  panedL1[2] = hist
+  G_.position(panedL1,150)
+  panedL2 = Paned(:v)
+  panedL2[1] = browser
+  panedL2[2] = panedL1
+  G_.position(panedL2,250)  
+  
+  #G_.size_request(panedL2, 350,-1)
   
   term = Terminal()
   #G_.border_width(term,5)
   #setproperty!(term,:margin, 5)
 
   hbox = Paned(:h)
-  hbox[1] = vboxL
+  hbox[1] = panedL2
   hbox[2] = term
   G_.position(hbox,350)
   #setproperty!(hbox,"left-margin", 5)
@@ -85,7 +93,7 @@ function JuliettaWindow()
   push!(win,vbox)
   showall(win)
   
-  global julietta = JuliettaWindow(win.handle,work,term,hist,spinner,nothing)  
+  global julietta = JuliettaWindow(win.handle,work,term,hist,browser,spinner,nothing)  
   
   signal_connect(win,"destroy") do object, args...
    exit()
