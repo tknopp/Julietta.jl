@@ -106,7 +106,19 @@ function Terminal()
     completed = false
 		prefix = bytestring(G_.text(terminal.entry))
         
-        if !completed
+        # TODO -> Gtk.jl
+        selection_bounds(editable::Gtk.GtkEditableI)=
+          bool( ccall((:gtk_editable_get_selection_bounds,Gtk.libgtk), Cint, 
+	     (Ptr{Gtk.GObject},Ptr{Cint},Ptr{Cint}),editable, C_NULL,C_NULL))
+         
+         #println(selection_bounds(entry))
+
+		#if event.keyval == KEY_TAB and not event.state & MOD_MASK and (
+		#		prefix and not self.get_selection_bounds() and
+		#		self.get_position() == len(prefix) and
+		#		not self.completed):        
+        
+        if !completed && !selection_bounds(entry)
           liststore = get_completion(prefix)
         
     	  if length(liststore) == 0
@@ -132,7 +144,18 @@ function Terminal()
 		end    
     
   end
-    
+  
+  signal_connect(completion, "match-selected") do completion, model, iter
+		#"""@note: This doesn't get called on inline completion."""
+		#print model[iter][0], 'was selected'
+		println("Huuuhuuu ")
+		completed = true
+		
+		#self.completing = ''
+		#completion.set_model(None)
+		return    
+  end
+  
   signal_connect(textView, "size-allocate") do widget, event, other...
     adj = G_.vadjustment(sw)
     G_.value(adj,getproperty(adj,:upper,Float64) - getproperty(adj,:page_size,Float64) )
