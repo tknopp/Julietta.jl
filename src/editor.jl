@@ -150,7 +150,7 @@ function comment!(doc::SourceDocument)
   for i=start_line:end_line
     it = Gtk.GtkTextIter(doc.buffer, i+1, 1)
     if !getproperty(it, :ends_line, Bool)
-      insert!(doc.buffer,it,"\t")
+      insert!(doc.buffer,it,"#")
     end
   end
   
@@ -232,7 +232,8 @@ function SourceViewer()
   btnRedo = ToolButton("gtk-redo")
   btnRun = ToolButton("gtk-media-play")
   btnIndent = ToolButton("gtk-indent")
-  btnUnindent = ToolButton("gtk-unindent")  
+  btnUnindent = ToolButton("gtk-unindent")
+  btnComment = ToolButton("gtk-indent")  
 
   toolItemCbx = ToolItem()
   cbxShowLineNumbers = CheckButton("Show line numbers")
@@ -251,7 +252,9 @@ function SourceViewer()
   push!(toolbar,btnUndo,btnRedo,SeparatorToolItem())
   push!(toolbar,btnRun,SeparatorToolItem())
   push!(toolbar,btnIndent,btnUnindent,SeparatorToolItem()) 
+  push!(toolbar,btnComment,SeparatorToolItem()) 
   push!(toolbar,toolItemCbx)
+  
   #G_.style(toolbar,ToolbarStyle.BOTH)  
   
   
@@ -307,7 +310,11 @@ function SourceViewer()
   
   signal_connect(btnUnindent, "clicked") do widget
     unindent!(currentDoc)
-  end    
+  end
+  
+  signal_connect(btnComment, "clicked") do widget
+    comment!(currentDoc)
+  end  
 
   signal_connect(currentDoc.buffer, "changed") do widget, args...
     G_.sensitive(btnUndo, canundo(currentDoc.buffer))
