@@ -3,14 +3,6 @@ Julietta - An IDE for Julia
 
 Julietta is an integrated developement environment (IDE) for the programming language Julia. It is written in Julia using Gtk.jl. In its current form Julietta is a prototype and should not be used for real developement as several thing are not yet implemented (and due to several bugs).
 
-## Screenshots
-
-![window](doc/fig/julietta.png)
-![window](doc/fig/editor.png)
-![window](doc/fig/contextmenu.png)
-![window](doc/fig/modulebrowser.png)
-![window](doc/fig/pkgviewer.png)
-
 ## Installation
 
 Currently it is a lot complicated to get Julietta running. Here is a list of instructions:
@@ -26,7 +18,27 @@ The complicated part is not the installation of the Julia packages (using Pkg.cl
 
 julia -F PATH_To_Julietta/src/run_julietta.jl
 
+## Screenshots
+
+### Main Window
+
+![window](doc/fig/julietta.png)
+
+### Editor
+
+![window](doc/fig/editor.png)
+
+### Module Browser
+
+![window](doc/fig/modulebrowser.png)
+
+### Julia Package Manager
+
+![window](doc/fig/pkgviewer.png)
+
+
 ## Licence
 
-Julietta is licensed under the GPLv3. As the author of this work I may spin off a commercial version of this software at some point.
+Julietta is licensed under the GPLv3. For code conributions: As the original author of this work I want to keep right to
+spin off a commercial version of this software.
 
