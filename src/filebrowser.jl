@@ -32,14 +32,14 @@ function FileBrowser()
   
   setproperty!(entry,:editable,false)
 
-  hbox = BoxLayout(:h)
-  push!(hbox,combo)
-  push!(hbox,btnUp)
-  push!(hbox,btnChooser)
-  setproperty!(hbox,:expand,combo,true)
-
+  toolbar = Toolbar()
+  push!(toolbar,btnUp,btnChooser)
+  G_.style(toolbar,ToolbarStyle.ICONS)
+  G_.icon_size(toolbar,IconSize.MENU)
+  
   box = BoxLayout(:v)
-  push!(box,hbox)
+  push!(box,combo)
+  push!(box,toolbar)
   push!(box,sw)
   setproperty!(box,:expand,sw,true)
 

@@ -48,11 +48,9 @@ function open(doc::SourceDocument)
 end
 
 function text(doc::SourceDocument)
-  itStart = Gtk.GtkTextIter(doc.buffer)
-  itEnd = Gtk.GtkTextIter(doc.buffer)
-  ccall((:gtk_text_buffer_get_end_iter,Gtk.libgtk),Void,
-        (Ptr{Gtk.GObject},Ptr{Void}),doc.buffer,itEnd.handle)
-  txt = bytestring( G_.text(doc.buffer, itStart.handle, itEnd.handle, false) )
+  itStart = G_.start_iter(doc.buffer)
+  itEnd = G_.end_iter(doc.buffer)
+  txt = bytestring( G_.text(doc.buffer, Gtk.mutable(itStart), Gtk.mutable(itEnd), false) )
 end
 
 function save(doc::SourceDocument)
@@ -86,7 +84,78 @@ function close(doc::SourceDocument)
 
 end
 
+function indent!(doc::SourceDocument)
+  b, itStart, itEnd = G_.selection_bounds(doc.buffer)
+  start_line = getproperty(itStart, :line, Cint)
+  end_line = getproperty(itEnd, :line, Cint)
+ 
+  # if the end of the selection is before the first character on a line,
+  # don't indent it
+  if (getproperty(itEnd,:visible_line_offset,Cint) == 0) && (end_line > start_line)
+    end_line -= 1
+  end
+  
+  Gtk.begin_user_action(doc.buffer)
+  
+  for i=start_line:end_line
+    it = Gtk.GtkTextIter(doc.buffer, i+1, 1)
+    if !getproperty(it, :ends_line, Bool)
+      insert!(doc.buffer,it,"\t")
+    end
+  end
+  
+  Gtk.end_user_action(doc.buffer)  
+end
 
+function unindent!(doc::SourceDocument)
+  ### THIS FUNCTION DOES NOT WORK. Why?
+  b, itStart, itEnd = G_.selection_bounds(doc.buffer)
+  start_line = getproperty(itStart, :line, Cint)
+  end_line = getproperty(itEnd, :line, Cint)
+ 
+  # if the end of the selection is before the first character on a line,
+  # don't indent it
+  if (getproperty(itEnd,:visible_line_offset,Cint) == 0) && (end_line > start_line)
+    end_line -= 1
+  end
+  
+  Gtk.begin_user_action(doc.buffer)
+  
+  for i=start_line:end_line
+    it = Gtk.GtkTextIter(doc.buffer, i+1, 1)
+    if getproperty(it, :char, Char) == '\t'
+      it2 = copy(it)
+      skip(Gtk.mutable(it2),1)
+      range_ = Gtk.GtkTextRange(it,it2)
+      splice!(doc.buffer,range_)
+     end
+  end
+  
+  Gtk.end_user_action(doc.buffer)  
+end
+
+function comment!(doc::SourceDocument)
+  b, itStart, itEnd = G_.selection_bounds(doc.buffer)
+  start_line = getproperty(itStart, :line, Cint)
+  end_line = getproperty(itEnd, :line, Cint)
+ 
+  # if the end of the selection is before the first character on a line,
+  # don't indent it
+  if (getproperty(itEnd,:visible_line_offset,Cint) == 0) && (end_line > start_line)
+    end_line -= 1
+  end
+  
+  Gtk.begin_user_action(doc.buffer)
+  
+  for i=start_line:end_line
+    it = Gtk.GtkTextIter(doc.buffer, i+1, 1)
+    if !getproperty(it, :ends_line, Bool)
+      insert!(doc.buffer,it,"\t")
+    end
+  end
+  
+  Gtk.end_user_action(doc.buffer)  
+end
 
 type SourceViewer <: Gtk.GtkWindowI
   handle::Ptr{Gtk.GObjectI}
@@ -98,11 +167,33 @@ end
 
 function push!(sv::SourceViewer, doc::SourceDocument)
 
+  label = Label(isempty(doc.filename) ? "New File" : basename(doc.filename))
+  G_.margin_right(label,4)
   hbox = BoxLayout(:h)
-  push!(hbox,Label(isempty(doc.filename) ? "New File" : basename(doc.filename)))
-  btnClose = ToolButton("gtk-close")
-  push!(hbox,btnClose)
-  G_.size_request(btnClose, 10,10)  
+  push!(hbox,label)
+  imClose = Image(stock_id="gtk-close",size=:menu)
+
+  btnClose = Button()
+  G_.relief(btnClose, ReliefStyle.NONE)
+  G_.focus_on_click(btnClose, false)
+  
+  btnstyle =  ".button {\n" *
+          "-GtkButton-default-border : 0px;\n" *
+          "-GtkButton-default-outside-border : 2px;\n" *
+          "-GtkButton-inner-border: 0px;\n" *
+          "-GtkWidget-focus-line-width : 0px;\n" *
+          "-GtkWidget-focus-padding : 0px;\n" *
+          "padding: 0px;\n" *
+          "}"
+  provider = CssProvider(data=btnstyle)
+  
+  # TODO fix
+  sc = StyleContext(convert(Ptr{Gtk.GObject},G_.style_context(btnClose)))
+  # 600 = GTK_STYLE_PROVIDER_PRIORITY_APPLICATION
+  push!(sc, provider, 600)
+  
+  push!(btnClose,imClose)
+  push!(hbox,btnClose) 
 
   push!(sv.notebook, doc, hbox)
   push!(sv.documents, doc)
@@ -215,7 +306,7 @@ function SourceViewer()
   end
   
   signal_connect(btnUnindent, "clicked") do widget
-    #TODO
+    unindent!(currentDoc)
   end    
 
   signal_connect(currentDoc.buffer, "changed") do widget, args...
