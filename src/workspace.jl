@@ -35,8 +35,6 @@ function Workspace()
 
   workspace = Workspace(box.handle, store)
 
-  update!(workspace)
-  
   selection = G_.selection(tv)   
 
   signal_connect(tv, "button-press-event") do widget, event, other...  
@@ -75,16 +73,15 @@ function Workspace()
   Gtk.gc_move_ref(workspace, box)
 end
 
-function update!(work::Workspace)
+function update!(work::Workspace, term)
   #println("update workspace...")
   empty!(work.store)
-  variables = remotecall_fetch(2, names, Main) 
-  #variables = names(Main)
+  variables = remotecall_fetch(term.id, names, Main) 
   
   #println(variables)
   
   for v in variables
-    row = @fetchfrom 2 begin
+    row = @fetchfrom term.id begin
       y=eval(v)
       if isa(y,Array)
         val = ""
@@ -102,17 +99,4 @@ function update!(work::Workspace)
       push!(work.store, row )  
     end
   end
-end
-
-type VariableViewer <: Gtk.GtkWindowI
-  handle::Ptr{Gtk.GObjectI}
-end
-
-function VariableViewer()
-  work = Workspace()
-  win = GtkWindow(work,"Variable Viewer")
-  show(win)
-  
-  variableViewer = VariableViewer(tv.handle)
-  Gtk.gc_move_ref(variableViewer, win)
 end

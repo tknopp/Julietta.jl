@@ -1,23 +1,17 @@
 
 import REPLCompletions
 
-function get_completion(prefix)
-  liststore = ListStore(String)
-  c,r = @fetchfrom 2 REPLCompletions.completions(prefix,endof(prefix))
-  for s in c
-      push!(liststore, (s,) )  
-  end
-  return liststore
-end
-
 type Terminal <: Gtk.GtkBoxI
   handle::Ptr{Gtk.GObjectI}
+  id::Int
   entry::Entry
   combo::GtkComboBoxText
   textView::TextView
 end
 
 function Terminal()
+  id = addprocs(1)[]
+  remotecall_fetch(id, Base.load_juliarc)
 
   combo = GtkComboBoxText(true)
   entry = G_.child(combo)
@@ -31,18 +25,6 @@ function Terminal()
   push!(vbox,combo)
   push!(vbox,sw)
   setproperty!(vbox,:expand,sw,true)
-    
-  rd, wr = redirect_stdout()
-
-  @schedule begin
-     while(true)
-        response = readavailable(rd)
-        if !isempty(response)
-          response = replace(response, "From worker 2:	", "")
-          insert!(textView,string(response)) #,"\n"
-        end
-     end
-   end
   
   # Redirect stderr on worker  
   @spawnat 2 begin
@@ -63,7 +45,7 @@ function Terminal()
   G_.text_column(completion,0)
   completed = false
   
-  terminal = Terminal(vbox.handle, entry, combo, textView)
+  terminal = Terminal(vbox.handle, id, entry, combo, textView)
   
   execute(terminal,"import REPLCompletions")
   #execute(terminal,"using Winston")
@@ -82,7 +64,7 @@ function Terminal()
         
         if !completed
           @async begin
-              liststore = get_completion(prefix)
+              liststore = get_completion(terminal,prefix)
             
               if length(liststore) == 0
                  completed = true
@@ -144,7 +126,7 @@ function Terminal()
         
         if !completed && !selection_bounds(entry)
           @async begin
-            liststore = get_completion(prefix)
+            liststore = get_completion(terminal,prefix)
         
     	    if length(liststore) == 0
 		    	 completed = true
@@ -179,6 +161,14 @@ function Terminal()
   Gtk.gc_move_ref(terminal, vbox)
 end
 
+function get_completion(term::Terminal, prefix)
+  liststore = ListStore(String)
+  c,r = @fetchfrom term.id REPLCompletions.completions(prefix,endof(prefix))
+  for s in c
+      push!(liststore, (s,) )  
+  end
+  return liststore
+end
 
 function execute(term::Terminal, cmd::String, silent::Bool=false)
   #println("execute cmd...")
@@ -192,18 +182,12 @@ function execute(term::Terminal, cmd::String, silent::Bool=false)
   G_.sensitive(term.entry, false)
 
   outputTxt = string("julia> ", cmd, "\n" )
-  #insert!(textBuf,G_.end_iter(textBuf),outputTxt)
   insert!(term.textView,outputTxt)
 
-  #if !endswith(cmd,";")
-  #  cmd = string(cmd,";show(ans)")
-  #end  
-      
   ex = Base.parse_input_line(cmd)
-  #eval(ex)
+
   @async begin
-    #remotecall_wait(2, eval, ex)
-    s = @fetchfrom 2 begin
+    s = @fetchfrom term.id begin
       ex = expand(ex)
       value = eval(Main,ex)
       eval(Main, :(ans = $(Expr(:quote, value))))
@@ -215,12 +199,11 @@ function execute(term::Terminal, cmd::String, silent::Bool=false)
     end
     
     if julietta != nothing
-      #println("execute cmd...2")
-      update!(julietta.work)
+      update!(julietta.work, term)
 
       stop(julietta.maintoolbar.spinner)
-      G_.sensitive(julietta.term.entry, true)
-      G_.text(julietta.term.entry,"")      
+      G_.sensitive(term.entry, true)
+      G_.text(term.entry,"")      
     end
   end
 end

@@ -56,33 +56,9 @@ end
 
 function push!(editor::Editor, doc::SourceDocument)
 
-  label = Label(isempty(doc.filename) ? "New File" : basename(doc.filename))
-  G_.margin_right(label,4)
   hbox = BoxLayout(:h)
-  push!(hbox,label)
-  imClose = Image(stock_id="gtk-close",size=:menu)
-
-  btnClose = Button()
-  G_.relief(btnClose, ReliefStyle.NONE)
-  G_.focus_on_click(btnClose, false)
-  
-  btnstyle =  ".button {\n" *
-          "-GtkButton-default-border : 0px;\n" *
-          "-GtkButton-default-outside-border : 2px;\n" *
-          "-GtkButton-inner-border: 0px;\n" *
-          "-GtkWidget-focus-line-width : 0px;\n" *
-          "-GtkWidget-focus-padding : 0px;\n" *
-          "padding: 0px;\n" *
-          "}"
-  provider = CssProvider(data=btnstyle)
-  
-  # TODO fix
-  sc = StyleContext(convert(Ptr{Gtk.GObject},G_.style_context(btnClose)))
-  # 600 = GTK_STYLE_PROVIDER_PRIORITY_APPLICATION
-  push!(sc, provider, 600)
-  
-  push!(btnClose,imClose)
-  push!(hbox,btnClose) 
+  push!(hbox,doc.label)
+  push!(hbox,doc.btnClose) 
 
   push!(editor.notebook, doc, hbox)
   push!(editor.documents, doc)
@@ -93,7 +69,7 @@ function push!(editor::Editor, doc::SourceDocument)
   G_.current_page(editor.notebook, editor.currentPage)
   G_.tab_reorderable(editor.notebook,doc,true)
   
-  signal_connect(btnClose, "clicked") do widget
+  signal_connect(doc.btnClose, "clicked") do widget
     i = pagenumber(editor.notebook, doc)
     splice!(editor.notebook,i)
   end  

@@ -6,6 +6,8 @@ type SourceDocument <: Gtk.GtkScrolledWindowI
   buffer::GtkSourceBuffer
   view::GtkSourceView
   filename::String
+  label
+  btnClose
 end
 
 function SourceDocument(lang::GtkSourceLanguage, scheme::GtkSourceStyleScheme)
@@ -19,7 +21,33 @@ function SourceDocument(lang::GtkSourceLanguage, scheme::GtkSourceStyleScheme)
   sw = ScrolledWindow()
   push!(sw,view)       
   
-  sourceDocument = SourceDocument(sw.handle, buffer, view, "")
+  label = Label("New File")
+  G_.margin_right(label,4)
+
+  imClose = Image(stock_id="gtk-close",size=:menu)
+
+  btnClose = Button()
+  G_.relief(btnClose, ReliefStyle.NONE)
+  G_.focus_on_click(btnClose, false)
+  
+  btnstyle =  ".button {\n" *
+          "-GtkButton-default-border : 0px;\n" *
+          "-GtkButton-default-outside-border : 0px;\n" *
+          "-GtkButton-inner-border: 0px;\n" *
+          "-GtkWidget-focus-line-width : 0px;\n" *
+          "-GtkWidget-focus-padding : 0px;\n" *
+          "padding: 0px;\n" *
+          "}"
+  provider = CssProvider(data=btnstyle)
+  
+  # TODO fix
+  sc = StyleContext(convert(Ptr{Gtk.GObject},G_.style_context(btnClose)))
+  # 600 = GTK_STYLE_PROVIDER_PRIORITY_APPLICATION
+  push!(sc, provider, 600)
+  
+  push!(btnClose,imClose)  
+  
+  sourceDocument = SourceDocument(sw.handle, buffer, view, "", label, btnClose)
   Gtk.gc_move_ref(sourceDocument, sw)
 end
 
@@ -28,6 +56,7 @@ function open(doc::SourceDocument, filename::String)
   txt = open(readall, doc.filename)
       
   G_.text(doc.buffer,txt,-1)
+  G_.text(doc.label,basename(doc.filename))
 end
 
 function open(doc::SourceDocument)
@@ -36,10 +65,7 @@ function open(doc::SourceDocument)
                         Stock.OPEN, Response.ACCEPT)
     ret = run(dlg)
     if ret == Response.ACCEPT
-      doc.filename = Gtk.bytestring(Gtk._.filename(dlg),true)
-      txt = open(readall, doc.filename)
-      
-      G_.text(doc.buffer,txt,-1)
+      open(doc, Gtk.bytestring(Gtk._.filename(dlg),true) )
     end
     destroy(dlg)
     

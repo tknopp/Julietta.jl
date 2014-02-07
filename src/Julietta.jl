@@ -17,6 +17,7 @@ include("terminal.jl")
 include("sourcedocument.jl")
 include("editor.jl")
 include("filebrowser.jl")
+include("pkgbrowser.jl")
 include("maintoolbar.jl")
 include("symbols.jl")
 
@@ -26,23 +27,21 @@ type JuliettaWindow <: Gtk.GtkWindowI
   term::Terminal
   hist::History
   browser::FileBrowser
+  pkgbrowser::PkgBrowser
   editor::Editor
   maintoolbar::MainToolbar
-  symbols::Symbols
+  #symbols::Symbols
 end
 
 # This is the global Julietta instance
 julietta = nothing
 
 function JuliettaWindow()
-  if nprocs() == 1
-    addprocs(1)
-  end
-  remotecall_fetch(2, Base.load_juliarc)
 
   hist = History()      
   work = Workspace()
   browser = FileBrowser()
+  pkgbrowser = PkgBrowser()
   #symbols = Symbols()
   maintoolbar = MainToolbar()
   
@@ -52,6 +51,7 @@ function JuliettaWindow()
   
   nb2 = Notebook()
   push!(nb2, browser, "Documents")
+  push!(nb2, pkgbrowser, "Packages")
   #push!(nb2, symbols, "Symbols") 
   
   
@@ -91,7 +91,19 @@ function JuliettaWindow()
   push!(win,vbox)
   showall(win)
   
-  global julietta = JuliettaWindow(win.handle,work,term,hist,browser,editor,maintoolbar)  
+  global julietta = JuliettaWindow(win.handle,work,term,hist,browser,pkgbrowser,editor,maintoolbar)  
+  
+  rd, wr = redirect_stdout()
+
+  @schedule begin
+     while(true)
+        response = readavailable(rd)
+        if !isempty(response)
+          response = replace(response, "From worker 2:	", "")
+          insert!(julietta.term.textView,string(response)) #,"\n"
+        end
+     end
+   end  
   
   signal_connect(win,"destroy") do object, args...
    exit()

@@ -1,5 +1,6 @@
 
-type FileBrowser <: Gtk.GtkBoxI
+
+type PkgBrowser <: Gtk.GtkBoxI
   handle::Ptr{Gtk.GObjectI}
   path::String
   store::ListStore
@@ -8,7 +9,7 @@ type FileBrowser <: Gtk.GtkBoxI
   recentFolder::Vector{String}
 end
 
-function FileBrowser()
+function PkgBrowser()
   store = ListStore(String,String)
   
   tv = TreeView(store)
@@ -49,7 +50,7 @@ function FileBrowser()
 
   recentFolder = String[]
 
-  browser = FileBrowser(box.handle, "", store, entry, combo, recentFolder)  
+  browser = PkgBrowser(box.handle, "", store, entry, combo, recentFolder)  
   
   changedir!(browser, pwd())
   
@@ -105,7 +106,7 @@ function FileBrowser()
   Gtk.gc_move_ref(browser, box)
 end
 
-function changedir!(browser::FileBrowser, path::String)
+function changedir!(browser::PkgBrowser, path::String)
   browser.path = path
   push!(browser.recentFolder,path)
   push!(browser.combo,path)
@@ -115,7 +116,7 @@ function changedir!(browser::FileBrowser, path::String)
   update!(browser)
 end
 
-function update!(browser::FileBrowser)
+function update!(browser::PkgBrowser)
   empty!(browser.store)
   cd(browser.path)
   if julietta != nothing
@@ -127,5 +128,3 @@ function update!(browser::FileBrowser)
     push!(browser.store, (file,stock))
   end
 end
-
-
