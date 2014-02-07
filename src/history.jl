@@ -26,7 +26,7 @@ function History()
   setproperty!(box,:expand,sw,true)
 
   commands = String[]
-  hist_filename = @windows? joinpath(ENV["HOMEDRIVE"],ENV["HOMEPATH"],".julia_history") : joinpath(ENV["HOME"],".julia_history")
+  hist_filename = joinpath(homedir(),".julia_history")
   history = History(box.handle, hist_filename, store, commands, length(commands))
 
   open(hist_filename) do stream

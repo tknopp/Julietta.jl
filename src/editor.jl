@@ -247,13 +247,17 @@ function SourceViewer()
   
   push!(toolItemCbx,vboxCbx)
   
+  btnFont = FontButton()
+  toolItemFont = ToolItem()
+  push!(toolItemFont,btnFont)
+  
   toolbar = Toolbar()
   push!(toolbar,btnNew,btnOpen,btnSave,btnSaveAs,SeparatorToolItem())
   push!(toolbar,btnUndo,btnRedo,SeparatorToolItem())
   push!(toolbar,btnRun,SeparatorToolItem())
   push!(toolbar,btnIndent,btnUnindent,SeparatorToolItem()) 
   push!(toolbar,btnComment,SeparatorToolItem()) 
-  push!(toolbar,toolItemCbx)
+  push!(toolbar,toolItemCbx,toolItemFont)
   
   #G_.style(toolbar,ToolbarStyle.BOTH)  
   
@@ -344,10 +348,23 @@ function SourceViewer()
     highlight_current_line!(currentDoc.view, getproperty(cbxHighlightCurrentLine,:active,Bool) )
   end
   
+  signal_connect(btnFont, "font-set") do widget
+    font_description = G_.font_desc(widget)
+    Gtk.modifyfont(currentDoc.view,font_description)
+  end    
+  
   Gtk.gc_move_ref(sourceViewer, win)
 end
 
 function open(viewer::SourceViewer, filename::String)
+  for d in viewer.documents
+    if d.filename == filename
+        i = pagenumber(viewer.notebook, d)
+        showall(d)
+        G_.current_page(viewer.notebook, i)
+      return
+    end
+  end
   doc = SourceDocument(viewer.lang, viewer.style)
   open(doc, filename)
   push!(viewer,doc)

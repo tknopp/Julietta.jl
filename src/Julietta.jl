@@ -66,7 +66,8 @@ function JuliettaWindow()
   
   btnEdit = ToolButton("gtk-edit")
   btnHelp = ToolButton("gtk-help")
-  btnPkg = ToolButton("gtk-preferences") 
+  btnPkg = ToolButton("gtk-preferences")
+  btnClear = ToolButton("gtk-clear")  
   spItem = ToolItem()
   spinner = Spinner()
   G_.size_request(spinner, 23,-1)
@@ -77,7 +78,7 @@ function JuliettaWindow()
   setproperty!(spItem,:margin, 5)
   
   toolbar = Toolbar()
-  push!(toolbar,btnEdit,btnPkg,btnHelp)
+  push!(toolbar,btnEdit,btnPkg,btnHelp,btnClear)
   push!(toolbar,spSep,spItem)
   G_.expand(spSep,true)
   G_.style(toolbar,ToolbarStyle.ICONS) #BOTH  
@@ -123,6 +124,17 @@ function JuliettaWindow()
     PkgViewer()
   end  
   
+  signal_connect(btnClear, "clicked") do widget
+    start(julietta.spinner)
+    @async begin
+      rmprocs(2)
+      addprocs(1)
+      update!(julietta.work)
+      stop(julietta.spinner)
+    end
+    
+    
+  end
 
   Gtk.gc_move_ref(julietta, win)
 end

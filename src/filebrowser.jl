@@ -29,11 +29,15 @@ function FileBrowser()
   entry = G_.child(combo)
   btnUp = ToolButton("gtk-go-up")
   btnChooser = ToolButton("gtk-open")
+  btnPkgDir = ToolButton("gtk-directory")
+  setproperty!(btnPkgDir,"tooltip-text","Open Package Directory")
+  btnHome = ToolButton("gtk-home")
+  setproperty!(btnHome,"tooltip-text","Open Home Directory")  
   
   setproperty!(entry,:editable,false)
 
   toolbar = Toolbar()
-  push!(toolbar,btnUp,btnChooser)
+  push!(toolbar,btnUp,btnChooser, btnHome, btnPkgDir)
   G_.style(toolbar,ToolbarStyle.ICONS)
   G_.icon_size(toolbar,IconSize.MENU)
   
@@ -53,6 +57,17 @@ function FileBrowser()
     cd("..")
     changedir!(browser,pwd())
   end  
+  
+  signal_connect(btnPkgDir, "clicked") do widget
+    cd(Pkg.dir())
+    changedir!(browser,pwd())
+  end
+  
+  signal_connect(btnHome, "clicked") do widget
+    cd(homedir())
+    changedir!(browser,pwd())
+  end  
+  
   
   signal_connect(btnChooser, "clicked") do widget
     dlg = FileChooserDialog("Select folder", NullContainer(), FileChooserAction.SELECT_FOLDER,
