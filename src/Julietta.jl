@@ -1,9 +1,9 @@
 # Issue with module in eval in workspace
 #module Julietta
 
-import Base.push!
+import Base: open, close, push!
 
-#export PkgViewer, VariableViewer, ModuleBrowser, SourceViewer, JuliettaWindow
+#export PkgViewer, VariableViewer, ModuleBrowser, Editor, JuliettaWindow
 
 using Gtk
 using Gtk.ShortNames
@@ -13,9 +13,12 @@ include("pkg.jl")
 include("history.jl")
 include("workspace.jl")
 include("modulebrowser.jl")
-include("editor.jl")
 include("terminal.jl")
+include("sourcedocument.jl")
+include("editor.jl")
 include("filebrowser.jl")
+include("maintoolbar.jl")
+include("symbols.jl")
 
 type JuliettaWindow <: Gtk.GtkWindowI
   handle::Ptr{Gtk.GObjectI}
@@ -23,8 +26,9 @@ type JuliettaWindow <: Gtk.GtkWindowI
   term::Terminal
   hist::History
   browser::FileBrowser
-  spinner::Spinner
-  editor
+  editor::Editor
+  maintoolbar::MainToolbar
+  symbols::Symbols
 end
 
 # This is the global Julietta instance
@@ -39,53 +43,46 @@ function JuliettaWindow()
   hist = History()      
   work = Workspace()
   browser = FileBrowser()
-  #G_.border_width(work,5)
-  #G_.border_width(hist,5)
-  panedL1 = Paned(:v)
-  panedL1[1] = work
-  panedL1[2] = hist
-  G_.position(panedL1,150)
+  #symbols = Symbols()
+  maintoolbar = MainToolbar()
+  
+  nb = Notebook()
+  push!(nb, work, "Workspace")
+  push!(nb, hist, "History")
+  
+  nb2 = Notebook()
+  push!(nb2, browser, "Documents")
+  #push!(nb2, symbols, "Symbols") 
+  
+  
   panedL2 = Paned(:v)
-  panedL2[1] = browser
-  panedL2[2] = panedL1
-  G_.position(panedL2,250)  
+  panedL2[1] = nb2
+  panedL2[2] = nb
+  G_.position(panedL2,500)  
   
-  #G_.size_request(panedL2, 350,-1)
-  
-  term = Terminal()
+  #G_.size_request(panedL2, 350,-1)  
   #G_.border_width(term,5)
   #setproperty!(term,:margin, 5)
 
+  editor = Editor()
+  term = Terminal()
+  
+  panedR = Paned(:v)
+  panedR[1] = editor
+  panedR[2] = term
+  G_.position(panedR,500)
+  
+  
   hbox = Paned(:h)
   hbox[1] = panedL2
-  hbox[2] = term
+  hbox[2] = panedR
   G_.position(hbox,350)
   #setproperty!(hbox,"left-margin", 5)
   #setproperty!(hbox,"upper-margin", 5)
   #setproperty!(hbox,"lower-margin", 5)
-  
-  btnEdit = ToolButton("gtk-edit")
-  btnHelp = ToolButton("gtk-help")
-  btnPkg = ToolButton("gtk-preferences")
-  btnClear = ToolButton("gtk-clear")  
-  spItem = ToolItem()
-  spinner = Spinner()
-  G_.size_request(spinner, 23,-1)
-  push!(spItem,spinner)
-  spSep = SeparatorToolItem()
-
-  setproperty!(spSep,:draw,false)
-  setproperty!(spItem,:margin, 5)
-  
-  toolbar = Toolbar()
-  push!(toolbar,btnEdit,btnPkg,btnHelp,btnClear)
-  push!(toolbar,spSep,spItem)
-  G_.expand(spSep,true)
-  G_.style(toolbar,ToolbarStyle.ICONS) #BOTH  
-  
-  
+    
   vbox = BoxLayout(:v)
-  push!(vbox,toolbar)
+  push!(vbox,maintoolbar)
   push!(vbox,hbox)
   setproperty!(vbox,:expand,hbox,true)
   
@@ -94,46 +91,10 @@ function JuliettaWindow()
   push!(win,vbox)
   showall(win)
   
-  global julietta = JuliettaWindow(win.handle,work,term,hist,browser,spinner,nothing)  
+  global julietta = JuliettaWindow(win.handle,work,term,hist,browser,editor,maintoolbar)  
   
   signal_connect(win,"destroy") do object, args...
    exit()
-  end
-  
-  signal_connect(btnEdit, "clicked") do widget
-    if julietta != nothing
-      if julietta.editor == nothing
-        julietta.editor = SourceViewer()
-        
-        signal_connect(julietta.editor,"delete-event") do args...
-          destroy(julietta.editor)
-          julietta.editor = nothing
-        end  
-        
-      end
-
-      present(julietta.editor)
-    end
-  end
-
-  signal_connect(btnHelp, "clicked") do widget
-    ModuleBrowser()
-  end
-
-  signal_connect(btnPkg, "clicked") do widget
-    PkgViewer()
-  end  
-  
-  signal_connect(btnClear, "clicked") do widget
-    start(julietta.spinner)
-    @async begin
-      rmprocs(2)
-      addprocs(1)
-      update!(julietta.work)
-      stop(julietta.spinner)
-    end
-    
-    
   end
 
   Gtk.gc_move_ref(julietta, win)

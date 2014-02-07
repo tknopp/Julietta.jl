@@ -187,7 +187,7 @@ function execute(term::Terminal, cmd::String, silent::Bool=false)
       push!(julietta.hist, cmd)
       push!(term.combo,cmd)
     end
-    start(julietta.spinner)
+    start(julietta.maintoolbar.spinner)
   end
   G_.sensitive(term.entry, false)
 
@@ -218,7 +218,7 @@ function execute(term::Terminal, cmd::String, silent::Bool=false)
       #println("execute cmd...2")
       update!(julietta.work)
 
-      stop(julietta.spinner)
+      stop(julietta.maintoolbar.spinner)
       G_.sensitive(julietta.term.entry, true)
       G_.text(julietta.term.entry,"")      
     end

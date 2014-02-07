@@ -43,8 +43,8 @@ function FileBrowser()
   
   box = BoxLayout(:v)
   push!(box,combo)
-  push!(box,toolbar)
   push!(box,sw)
+  push!(box,toolbar)  
   setproperty!(box,:expand,sw,true)
 
   recentFolder = String[]
@@ -94,17 +94,9 @@ function FileBrowser()
         changedir!(browser, newpath)
       else
         if julietta != nothing
-          if julietta.editor == nothing
-            julietta.editor = SourceViewer()
-        
-            signal_connect(julietta.editor,"delete-event") do args...
-              destroy(julietta.editor)
-              julietta.editor = nothing
-            end          
-          end
           open(julietta.editor,newpath)
         end
-        present(julietta.editor)
+        #present(julietta.editor)
       end
     end
     false
