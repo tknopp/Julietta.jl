@@ -157,10 +157,10 @@ function unindent!(doc::SourceDocument)
   for i=start_line:end_line
     it = Gtk.GtkTextIter(doc.buffer, i+1, 1)
     if getproperty(it, :char, Char) == '\t'
-      it2 = copy(it)
-      skip(Gtk.mutable(it2),1)
-      range_ = Gtk.GtkTextRange(it,it2)
-      splice!(doc.buffer,range_)
+      it2 = it + 1
+      #skip(Gtk.mutable(it2),1)
+      #range_ = Gtk.GtkTextRange(it,it2)
+      splice!(doc.buffer,it2)#range_)
      end
   end
   
@@ -185,6 +185,31 @@ function comment!(doc::SourceDocument)
     if !getproperty(it, :ends_line, Bool)
       insert!(doc.buffer,it,"#")
     end
+  end
+  
+  Gtk.end_user_action(doc.buffer)  
+end
+
+function uncomment!(doc::SourceDocument)
+  ### THIS FUNCTION DOES NOT WORK. Why?
+  b, itStart, itEnd = G_.selection_bounds(doc.buffer)
+  start_line = getproperty(itStart, :line, Cint)
+  end_line = getproperty(itEnd, :line, Cint)
+ 
+  # if the end of the selection is before the first character on a line,
+  # don't indent it
+  if (getproperty(itEnd,:visible_line_offset,Cint) == 0) && (end_line > start_line)
+    end_line -= 1
+  end
+  
+  Gtk.begin_user_action(doc.buffer)
+  
+  for i=start_line:end_line
+    it = Gtk.GtkTextIter(doc.buffer, i+1, 1)
+    if getproperty(it, :char, Char) == '#'
+      it2 = it + 1
+      splice!(doc.buffer,it2)
+     end
   end
   
   Gtk.end_user_action(doc.buffer)  

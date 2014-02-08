@@ -1,4 +1,16 @@
 
+function ishidden(filename::String)
+  @unix_only begin
+    s = basename(filename)
+    return (!isempty(s) && s[1] == '.')
+  end
+  @windows_only begin
+    attr = ccall((:GetFileAttributesA),Cint, (Ptr{Uint8},),bytestring(filename))
+    return attr & 0x2 > 0
+  end
+  
+end
+
 type FileBrowser <: Gtk.GtkBoxI
   handle::Ptr{Gtk.GObjectI}
   path::String
@@ -123,8 +135,10 @@ function update!(browser::FileBrowser)
   end
   files = readdir()
   for file in files
-    stock = isdir(file) ? "gtk-directory" : "gtk-file"
-    push!(browser.store, (file,stock))
+    if !ishidden(file)
+      stock = isdir(file) ? "gtk-directory" : "gtk-file"
+      push!(browser.store, (file,stock))
+    end
   end
 end
 

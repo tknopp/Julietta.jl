@@ -27,7 +27,9 @@ function MainToolbar()
   btnRun = ToolButton("gtk-media-play")
   btnIndent = ToolButton("gtk-indent")
   btnUnindent = ToolButton("gtk-unindent")
-  btnComment = ToolButton("gtk-indent")  
+  btnComment = ToolButton("gtk-indent")
+  btnUncomment = ToolButton("gtk-unindent")  
+  btnAbout = ToolButton("gtk-about")
 
   toolItemCbx = ToolItem()
   cbxShowLineNumbers = CheckButton("Show line numbers")
@@ -50,7 +52,7 @@ function MainToolbar()
   push!(toolbar,btnUndo,btnRedo,SeparatorToolItem())
   push!(toolbar,btnRun,SeparatorToolItem())
   push!(toolbar,btnIndent,btnUnindent,SeparatorToolItem()) 
-  push!(toolbar,btnComment,SeparatorToolItem()) 
+  push!(toolbar,btnComment,btnUncomment,SeparatorToolItem()) 
   push!(toolbar,toolItemCbx,toolItemFont)
   G_.style(toolbar,ToolbarStyle.ICONS) #BOTH
   #G_.icon_size(toolbar,IconSize.MENU)
@@ -59,7 +61,7 @@ function MainToolbar()
   btnHelp = ToolButton("gtk-help")
   btnPkg = ToolButton("gtk-preferences")
   btnClear = ToolButton("gtk-clear")
-  push!(toolbar,btnHelp,btnPkg,btnClear)
+  push!(toolbar,btnHelp,btnPkg,btnClear, btnAbout)
   
   # Add spinner
   spItem = ToolItem()
@@ -133,14 +135,15 @@ function MainToolbar()
   signal_connect(btnComment, "clicked") do widget
     comment!(julietta.editor.currentDoc)
   end  
+  
+  signal_connect(btnUncomment, "clicked") do widget
+    uncomment!(julietta.editor.currentDoc)
+  end
 
   #signal_connect(currentDoc.buffer, "changed") do widget, args...
   #  G_.sensitive(btnUndo, canundo(currentDoc.buffer))
   #  G_.sensitive(btnRedo, canredo(currentDoc.buffer))
-  #end  
-  
-
-  
+  #end    
   
   signal_connect(btnRun, "clicked") do widget
     script = text(julietta.editor.currentDoc)
@@ -184,6 +187,15 @@ function MainToolbar()
     end
   end  
   
+  
+  signal_connect(btnAbout, "clicked") do widget
+    dlg = AboutDialog()
+    G_.program_name(dlg,"Julietta")
+    G_.version(dlg,"0.0.0")
+    
+    ret = run(dlg)
+    destroy(dlg)
+  end     
   
   Gtk.gc_move_ref(maintoolbar, toolbar)
 end
