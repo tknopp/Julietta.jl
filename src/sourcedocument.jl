@@ -47,6 +47,13 @@ function SourceDocument(lang::GtkSourceLanguage, scheme::GtkSourceStyleScheme)
   
   push!(btnClose,imClose)  
   
+  signal_connect(buffer, "changed") do widget, args...
+    #TODO: only first time
+    s = julietta.editor.currentDoc.filename
+    s = isempty(s) ? "New File" : basename(s)
+    G_.text(label,"*"*s)
+  end   
+  
   sourceDocument = SourceDocument(sw.handle, buffer, view, "", label, btnClose)
   Gtk.gc_move_ref(sourceDocument, sw)
 end
@@ -82,6 +89,7 @@ function save(doc::SourceDocument)
   stream = open(doc.filename, "w")
   write(stream,text(doc))
   close(stream)
+  G_.text(doc.label,basename(doc.filename))
 end
 
 function saveas(doc::SourceDocument)
