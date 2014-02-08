@@ -70,7 +70,7 @@ function push!(editor::Editor, doc::SourceDocument)
   G_.tab_reorderable(editor.notebook,doc,true)
   
   signal_connect(doc.btnClose, "clicked") do widget
-    i = pagenumber(editor.notebook, doc)
+    i = pagenumber(editor.notebook, doc) + 1 # we need to fix this in Gtk.jl
     splice!(editor.notebook,i)
   end  
   
