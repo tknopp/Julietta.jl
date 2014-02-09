@@ -141,7 +141,6 @@ function indent!(doc::SourceDocument)
 end
 
 function unindent!(doc::SourceDocument)
-  ### THIS FUNCTION DOES NOT WORK. Why?
   b, itStart, itEnd = G_.selection_bounds(doc.buffer)
   start_line = getproperty(itStart, :line, Cint)
   end_line = getproperty(itEnd, :line, Cint)
@@ -191,7 +190,6 @@ function comment!(doc::SourceDocument)
 end
 
 function uncomment!(doc::SourceDocument)
-  ### THIS FUNCTION DOES NOT WORK. Why?
   b, itStart, itEnd = G_.selection_bounds(doc.buffer)
   start_line = getproperty(itStart, :line, Cint)
   end_line = getproperty(itEnd, :line, Cint)

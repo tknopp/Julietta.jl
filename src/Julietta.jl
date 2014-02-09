@@ -8,7 +8,7 @@ import Base: open, close, push!
 using Gtk
 using Gtk.ShortNames
 
-
+include("settings.jl")
 include("pkg.jl")
 include("history.jl")
 include("workspace.jl")

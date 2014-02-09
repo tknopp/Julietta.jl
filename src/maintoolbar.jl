@@ -11,9 +11,6 @@ type MainToolbar <: Gtk.GtkToolbarI
   btnIndent
   btnUnindent
   btnComment
-  cbxShowLineNumbers
-  cbxHighlightCurrentLine
-  btnFont
   spinner
 end
 
@@ -30,22 +27,6 @@ function MainToolbar()
   btnComment = ToolButton("gtk-indent")
   btnUncomment = ToolButton("gtk-unindent")  
   btnAbout = ToolButton("gtk-about")
-
-  toolItemCbx = ToolItem()
-  cbxShowLineNumbers = CheckButton("Show line numbers")
-  cbxHighlightCurrentLine = CheckButton("Highlight current line")
-  
-  vboxCbx = BoxLayout(:v)
-  push!(vboxCbx,cbxShowLineNumbers)
-  push!(vboxCbx,cbxHighlightCurrentLine)
-  setproperty!(cbxShowLineNumbers,:active,true)  
-  setproperty!(cbxHighlightCurrentLine,:active,false)
-  
-  push!(toolItemCbx,vboxCbx)
-  
-  btnFont = FontButton()
-  toolItemFont = ToolItem()
-  push!(toolItemFont,btnFont)
   
   toolbar = Toolbar()
   push!(toolbar,btnNew,btnOpen,btnSave,btnSaveAs,SeparatorToolItem())
@@ -53,15 +34,14 @@ function MainToolbar()
   push!(toolbar,btnRun,SeparatorToolItem())
   push!(toolbar,btnIndent,btnUnindent,SeparatorToolItem()) 
   push!(toolbar,btnComment,btnUncomment,SeparatorToolItem()) 
-  push!(toolbar,toolItemCbx,toolItemFont)
   G_.style(toolbar,ToolbarStyle.ICONS) #BOTH
   #G_.icon_size(toolbar,IconSize.MENU)
 
   
   btnHelp = ToolButton("gtk-help")
-  btnPkg = ToolButton("gtk-preferences")
+  btnSettings = ToolButton("gtk-preferences")
   btnClear = ToolButton("gtk-clear")
-  push!(toolbar,btnHelp,btnPkg,btnClear, btnAbout)
+  push!(toolbar,btnHelp,btnSettings,btnClear, btnAbout)
   
   # Add spinner
   spItem = ToolItem()
@@ -85,9 +65,6 @@ function MainToolbar()
   btnIndent,
   btnUnindent,
   btnComment,
-  cbxShowLineNumbers,
-  cbxHighlightCurrentLine,
-  btnFont,
   spinner
   ) 
   
@@ -150,31 +127,17 @@ function MainToolbar()
     if julietta != nothing
       execute(julietta.term, script)
     end
-  end
-  
-  signal_connect(cbxShowLineNumbers, "toggled") do widget
-    #TODO: Do it in all views
-    show_line_numbers!(julietta.editor.currentDoc.view, getproperty(cbxShowLineNumbers,:active,Bool) )
-  end
-  
-  signal_connect(cbxHighlightCurrentLine, "toggled") do widget
-    #TODO: Do it in all views
-    highlight_current_line!(julietta.editor.currentDoc.view, getproperty(cbxHighlightCurrentLine,:active,Bool) )
-  end
-  
-  signal_connect(btnFont, "font-set") do widget
-    #TODO: Do it in all views
-    font_description = G_.font_desc(widget)
-    Gtk.modifyfont(julietta.editor.currentDoc.view,font_description)
-  end    
+  end 
   
   
   signal_connect(btnHelp, "clicked") do widget
     ModuleBrowser()
   end
 
-  signal_connect(btnPkg, "clicked") do widget
-    PkgViewer()
+  signal_connect(btnSettings, "clicked") do widget
+    dlg = SettingsDialog()
+    ret = run(dlg)
+    destroy(dlg)
   end  
   
   signal_connect(btnClear, "clicked") do widget
