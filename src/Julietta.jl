@@ -80,16 +80,49 @@ function JuliettaWindow()
   #setproperty!(hbox,"left-margin", 5)
   #setproperty!(hbox,"upper-margin", 5)
   #setproperty!(hbox,"lower-margin", 5)
-    
+  
+  
+  file = MenuItem("_File")
+  filemenu = Menu(file)
+  saveIt = MenuItem("Save")
+  signal_connect(saveIt, :activate) do widget
+     save(julietta.editor.currentDoc)
+  end
+  push!(filemenu, saveIt)
+  push!(filemenu, SeparatorMenuItem())
+  quitIt = MenuItem("Quit")
+  signal_connect(quitIt, :activate) do widget
+     exit()
+  end  
+  push!(filemenu, quitIt)
+  mb = MenuBar()
+  push!(mb, file)  # notice this is the "File" item, not filemenu
+  
+  #G_.accel_path(new_ ,"<control>s")#, AccelGroup())
+  
+
+  
+  
   vbox = BoxLayout(:v)
+  push!(vbox,mb)
   push!(vbox,maintoolbar)
   push!(vbox,hbox)
-  setproperty!(vbox,:expand,hbox,true)
-  
+  setproperty!(vbox,:expand,hbox,true)  
   
   win = GtkWindow("Julietta",1024,768)
-  push!(win,vbox)
+  push!(win,vbox)  
   showall(win)
+  
+  ag = AccelGroup()
+  push!(win,ag)
+  
+  push!(saveIt, "activate", ag, keyval("s") ,
+  (@osx? GdkModifierType.META : GdkModifierType.CONTROL), 
+  GtkAccelFlags.VISIBLE)
+  
+  push!(quitIt, "activate", ag, keyval("q") ,
+  (@osx? GdkModifierType.META : GdkModifierType.CONTROL), 
+  GtkAccelFlags.VISIBLE)  
   
   global julietta = JuliettaWindow(win.handle,work,term,hist,browser,pkgbrowser,editor,maintoolbar)  
   

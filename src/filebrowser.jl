@@ -24,6 +24,7 @@ function FileBrowser()
   store = ListStore(String,String)
   
   tv = TreeView(store)
+  G_.headers_visible(tv,false)
   r1 = CellRendererPixbuf()
   r2 = CellRendererText()
   c1 = TreeViewColumn("Files", r1, {"stock-id" => 1})
@@ -47,7 +48,6 @@ function FileBrowser()
   setproperty!(btnHome,"tooltip-text","Open Home Directory")  
   
   setproperty!(entry,:editable,false)
-
   toolbar = Toolbar()
   push!(toolbar,btnUp,btnChooser, btnHome, btnPkgDir)
   G_.style(toolbar,ToolbarStyle.ICONS)
@@ -55,8 +55,8 @@ function FileBrowser()
   
   box = BoxLayout(:v)
   push!(box,combo)
+  push!(box,toolbar)    
   push!(box,sw)
-  push!(box,toolbar)  
   setproperty!(box,:expand,sw,true)
 
   recentFolder = String[]

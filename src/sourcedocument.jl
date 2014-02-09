@@ -128,7 +128,7 @@ function indent!(doc::SourceDocument)
     end_line -= 1
   end
   
-  Gtk.begin_user_action(doc.buffer)
+  user_action(doc.buffer) do buffer
   
   for i=start_line:end_line
     it = Gtk.GtkTextIter(doc.buffer, i+1, 1)
@@ -137,7 +137,7 @@ function indent!(doc::SourceDocument)
     end
   end
   
-  Gtk.end_user_action(doc.buffer)  
+  end 
 end
 
 function unindent!(doc::SourceDocument)
@@ -151,7 +151,7 @@ function unindent!(doc::SourceDocument)
     end_line -= 1
   end
   
-  Gtk.begin_user_action(doc.buffer)
+  user_action(doc.buffer) do buffer
   
   for i=start_line:end_line
     it = Gtk.GtkTextIter(doc.buffer, i+1, 1)
@@ -163,7 +163,7 @@ function unindent!(doc::SourceDocument)
      end
   end
   
-  Gtk.end_user_action(doc.buffer)  
+  end 
 end
 
 function comment!(doc::SourceDocument)
@@ -177,7 +177,7 @@ function comment!(doc::SourceDocument)
     end_line -= 1
   end
   
-  Gtk.begin_user_action(doc.buffer)
+  user_action(doc.buffer) do buffer
   
   for i=start_line:end_line
     it = Gtk.GtkTextIter(doc.buffer, i+1, 1)
@@ -186,7 +186,7 @@ function comment!(doc::SourceDocument)
     end
   end
   
-  Gtk.end_user_action(doc.buffer)  
+  end 
 end
 
 function uncomment!(doc::SourceDocument)
@@ -200,7 +200,7 @@ function uncomment!(doc::SourceDocument)
     end_line -= 1
   end
   
-  Gtk.begin_user_action(doc.buffer)
+  user_action(doc.buffer) do buffer
   
   for i=start_line:end_line
     it = Gtk.GtkTextIter(doc.buffer, i+1, 1)
@@ -209,6 +209,6 @@ function uncomment!(doc::SourceDocument)
       splice!(doc.buffer,it2)
      end
   end
-  
-  Gtk.end_user_action(doc.buffer)  
+ 
+  end    
 end

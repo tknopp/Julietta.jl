@@ -4,7 +4,6 @@ type PkgBrowser <: Gtk.GtkBoxI
   handle::Ptr{Gtk.GObjectI}
   path::String
   store::ListStore
-  entry::Entry
   combo::GtkComboBoxText
   recentFolder::Vector{String}
 end
@@ -13,6 +12,7 @@ function PkgBrowser()
   store = ListStore(String,String)
   
   tv = TreeView(store)
+  G_.headers_visible(tv,false)  
   r1 = CellRendererPixbuf()
   r2 = CellRendererText()
   c1 = TreeViewColumn("Files", r1, {"stock-id" => 1})
@@ -26,60 +26,27 @@ function PkgBrowser()
   sw = ScrolledWindow()
   push!(sw,tv)
   
-  combo = GtkComboBoxText(true)
-  entry = G_.child(combo)
-  btnUp = ToolButton("gtk-go-up")
-  btnChooser = ToolButton("gtk-open")
-  btnPkgDir = ToolButton("gtk-directory")
-  setproperty!(btnPkgDir,"tooltip-text","Open Package Directory")
-  btnHome = ToolButton("gtk-home")
-  setproperty!(btnHome,"tooltip-text","Open Home Directory")  
-  
-  setproperty!(entry,:editable,false)
-
-  toolbar = Toolbar()
-  push!(toolbar,btnUp,btnChooser, btnHome, btnPkgDir)
-  G_.style(toolbar,ToolbarStyle.ICONS)
-  G_.icon_size(toolbar,IconSize.MENU)
+  combo = GtkComboBoxText(false)
   
   box = BoxLayout(:v)
   push!(box,combo)
   push!(box,sw)
-  push!(box,toolbar)  
   setproperty!(box,:expand,sw,true)
 
   recentFolder = String[]
 
-  browser = PkgBrowser(box.handle, "", store, entry, combo, recentFolder)  
+  browser = PkgBrowser(box.handle, "", store, combo, recentFolder)  
   
-  changedir!(browser, pwd())
-  
-  signal_connect(btnUp, "clicked") do widget
-    cd("..")
-    changedir!(browser,pwd())
-  end  
-  
-  signal_connect(btnPkgDir, "clicked") do widget
-    cd(Pkg.dir())
-    changedir!(browser,pwd())
-  end
-  
-  signal_connect(btnHome, "clicked") do widget
-    cd(homedir())
-    changedir!(browser,pwd())
-  end  
-  
-  
-  signal_connect(btnChooser, "clicked") do widget
-    dlg = FileChooserDialog("Select folder", NullContainer(), FileChooserAction.SELECT_FOLDER,
-                        Stock.CANCEL, Response.CANCEL,
-                        Stock.OPEN, Response.ACCEPT)
-    ret = run(dlg)
-    if ret == Response.ACCEPT
-      path = Gtk.bytestring(Gtk._.filename(dlg),true)
-      changedir!(browser,path)
+  cd(Pkg.dir())
+  files = readdir()
+  for file in files
+    if isdir(file) && !ishidden(file)
+      push!(combo,basename(file))
     end
-    destroy(dlg)
+  end  
+
+  signal_connect(combo, "changed") do w, other...
+    changedir!(julietta.pkgbrowser, Pkg.dir( bytestring( G_.active_text(w))))
   end
   
   selection = G_.selection(tv) 
@@ -108,11 +75,6 @@ end
 
 function changedir!(browser::PkgBrowser, path::String)
   browser.path = path
-  push!(browser.recentFolder,path)
-  push!(browser.combo,path)
-  G_.text(browser.entry,path)
-  G_.position(browser.entry,-1)  
-
   update!(browser)
 end
 
