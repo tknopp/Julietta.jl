@@ -10,7 +10,7 @@ function ModuleBrowser()
   if !isfile(filename)
     filename = Pkg.dir("JuliaTools.jl","src","moduleBrowser.ui")
   end
-  builder = Builder(filename)
+  builder = Builder(filename=filename)
 
   storeModules = ListStore(String)
   

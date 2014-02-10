@@ -9,7 +9,7 @@ function PkgViewer()
   if !isfile(filename)
     filename = Pkg.dir("Julietta.jl","src","pkgviewer.ui")
   end
-  builder = Builder(filename)
+  builder = Builder(filename=filename)
   
   store = ListStore(String,String,Bool)
   tmFiltered = nothing

@@ -116,13 +116,9 @@ function JuliettaWindow()
   ag = AccelGroup()
   push!(win,ag)
   
-  push!(saveIt, "activate", ag, keyval("s") ,
-  (@osx? GdkModifierType.META : GdkModifierType.CONTROL), 
-  GtkAccelFlags.VISIBLE)
+  push!(saveIt, "activate", ag, keyval("s") ,  GdkModifierType.COMMAND,  GtkAccelFlags.VISIBLE)
   
-  push!(quitIt, "activate", ag, keyval("q") ,
-  (@osx? GdkModifierType.META : GdkModifierType.CONTROL), 
-  GtkAccelFlags.VISIBLE)  
+  push!(quitIt, "activate", ag, keyval("q") , GdkModifierType.COMMAND, GtkAccelFlags.VISIBLE)  
   
   global julietta = JuliettaWindow(win.handle,work,term,hist,browser,pkgbrowser,editor,maintoolbar)  
   
