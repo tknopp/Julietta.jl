@@ -48,9 +48,12 @@ function SettingsDialog()
 end
 
 function applySettings(s::SettingsDialog)
-    show_line_numbers!(julietta.editor.currentDoc.view, getproperty(cbxShowLineNumbers,:active,Bool) )
-    highlight_current_line!(julietta.editor.currentDoc.view, getproperty(cbxHighlightCurrentLine,:active,Bool) )
-    font_description = G_.font_desc(widget)
+  settings[:showLineNumbers] = getproperty(cbxShowLineNumbers,:active,Bool)
+ settings[:highlightCurrentLine] =  getproperty(cbxHighlightCurrentLine,:active,Bool)
+
+   # show_line_numbers!(julietta.editor.currentDoc.view, getproperty(cbxShowLineNumbers,:active,Bool) )
+   # highlight_current_line!(julietta.editor.currentDoc.view, getproperty(cbxHighlightCurrentLine,:active,Bool) )
+   # font_description = G_.font_desc(widget)
    # Gtk.modifyfont(julietta.editor.currentDoc.view,font_description)
   
 
