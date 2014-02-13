@@ -61,15 +61,13 @@ end
 function parse(doc::SourceDocument)
   #ast = Base.parse(text(doc),raise=false)
   ast = Base.parse_input_line(text(doc))
-  if ast != nothing && typeof(ast) == Symbol
-    G_.markup(doc.label, 
-       "<span foreground=\"green\">" * bytestring(G_.text(doc.label)) * "</span>")
-  elseif ast != nothing && ast.head != :error && ast.head != :incomplete
-    G_.markup(doc.label, 
-       "<span foreground=\"green\">" * bytestring(G_.text(doc.label)) * "</span>")
-  else
+  if ast != nothing && typeof(ast) != Symbol &&
+    (ast.head == :error || ast.head == :incomplete || ast.head == :continue)
     G_.markup(doc.label, 
        "<span foreground=\"red\">" * bytestring(G_.text(doc.label)) * "</span>")
+  else
+    G_.markup(doc.label, 
+       "<span foreground=\"green\">" * bytestring(G_.text(doc.label)) * "</span>")
   end
 end
 

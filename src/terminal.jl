@@ -191,7 +191,6 @@ function execute(term::Terminal, cmd::String, silent::Bool=false)
       ex = expand(ex)
       value = eval(Main,ex)
       eval(Main, :(ans = $(Expr(:quote, value))))
-      #repr(value)
       sprint(Base.showlimited,value)
     end
     
