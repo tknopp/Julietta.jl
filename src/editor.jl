@@ -35,6 +35,15 @@ function Editor()
     julietta.editor.currentDoc = page
   end  
   
+  @schedule begin
+     while(true)
+       if editor.currentDoc != nothing
+         parse(editor.currentDoc)
+       end
+       sleep(2)
+     end
+   end   
+  
   Gtk.gc_move_ref(editor, vbox)
 end
 
@@ -72,6 +81,15 @@ function push!(editor::Editor, doc::SourceDocument)
   signal_connect(doc.btnClose, "clicked") do widget
     i = pagenumber(editor.notebook, doc) + 1 # we need to fix this in Gtk.jl
     splice!(editor.notebook,i)
+    # TODO refactor!!!
+    j = -1
+    for (l,d) in enumerate(editor.documents)
+      if is(d,doc)
+        j = l
+        break
+      end
+    end
+    splice!(editor.documents, j)
   end  
   
   showall(editor.notebook)   

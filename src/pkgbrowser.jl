@@ -3,13 +3,13 @@
 type PkgBrowser <: Gtk.GtkBoxI
   handle::Ptr{Gtk.GObjectI}
   path::String
-  store::ListStore
+  store::TreeStore
   combo::GtkComboBoxText
   recentFolder::Vector{String}
 end
 
 function PkgBrowser()
-  store = ListStore(String,String)
+  store = TreeStore(String,String)
   
   tv = TreeView(store)
   G_.headers_visible(tv,false)  
@@ -54,9 +54,19 @@ function PkgBrowser()
     if hasselection(selection)
       m, currentIt = selected(selection)
 
-      file = store[currentIt][1]
+      filepath = store[currentIt][1]
+
+      treepath = Gtk.path(store,currentIt)
       
-      newpath = joinpath(browser.path,file)
+      println(Gtk.depth(treepath))
+      
+      for l=2:Gtk.depth(treepath)
+        b = up(treepath)
+        valid,it = Gtk.iter(store,treepath)
+        filepath = joinpath(store[it][1], filepath)    
+      end
+
+      newpath = joinpath(browser.path,filepath)
       
       if isdir(newpath)
         changedir!(browser, newpath)
@@ -78,15 +88,19 @@ function changedir!(browser::PkgBrowser, path::String)
   update!(browser)
 end
 
-function update!(browser::PkgBrowser)
-  empty!(browser.store)
-  cd(browser.path)
-  if julietta != nothing
-    remotecall(julietta.term.id,cd,browser.path)
-  end
-  files = readdir()
+function dirwalk(store::TreeStore, path::String, parent=nothing)
+  files = readdir(path)
   for file in files
-    stock = isdir(file) ? "gtk-directory" : "gtk-file"
-    push!(browser.store, (file,stock))
+    stock = isdir(joinpath(path,file)) ? "gtk-directory" : "gtk-file"
+    it = push!(store, (file,stock), parent)
+    if isdir(joinpath(path,file))
+      dirwalk(store, joinpath(path,file), it)
+    end
   end
 end
+
+function update!(browser::PkgBrowser)
+  empty!(browser.store)
+  dirwalk(browser.store, browser.path)
+end
+

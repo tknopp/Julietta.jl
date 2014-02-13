@@ -58,12 +58,29 @@ function SourceDocument(lang::GtkSourceLanguage, scheme::GtkSourceStyleScheme)
   Gtk.gc_move_ref(sourceDocument, sw)
 end
 
+function parse(doc::SourceDocument)
+  #ast = Base.parse(text(doc),raise=false)
+  ast = Base.parse_input_line(text(doc))
+  if ast != nothing && typeof(ast) == Symbol
+    G_.markup(doc.label, 
+       "<span foreground=\"green\">" * bytestring(G_.text(doc.label)) * "</span>")
+  elseif ast != nothing && ast.head != :error && ast.head != :incomplete
+    G_.markup(doc.label, 
+       "<span foreground=\"green\">" * bytestring(G_.text(doc.label)) * "</span>")
+  else
+    G_.markup(doc.label, 
+       "<span foreground=\"red\">" * bytestring(G_.text(doc.label)) * "</span>")
+  end
+end
+
 function open(doc::SourceDocument, filename::String)
   doc.filename = filename
   txt = open(readall, doc.filename)
       
   G_.text(doc.buffer,txt,-1)
   G_.text(doc.label,basename(doc.filename))
+  
+  parse(doc)
 end
 
 function open(doc::SourceDocument)

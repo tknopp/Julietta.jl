@@ -1,7 +1,7 @@
 # Issue with module in eval in workspace
 #module Julietta
 
-import Base: open, close, push!
+import Base: open, close, push!, parse
 
 #export PkgViewer, VariableViewer, ModuleBrowser, Editor, JuliettaWindow
 
