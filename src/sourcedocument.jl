@@ -17,6 +17,7 @@ function SourceDocument(lang::GtkSourceLanguage, scheme::GtkSourceStyleScheme)
   style_scheme!(buffer,scheme)
   show_line_numbers!(view,true)
   auto_indent!(view,true)
+  highlight_matching_brackets(buffer,true)
 
   sw = ScrolledWindow()
   push!(sw,view)       
