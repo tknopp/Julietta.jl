@@ -141,5 +141,3 @@ function update!(browser::FileBrowser)
     end
   end
 end
-
-

@@ -50,20 +50,21 @@ function SourceDocument(lang::GtkSourceLanguage, scheme::GtkSourceStyleScheme)
   
   push!(btnClose,imClose)  
   
+  tag = Gtk.create_tag(buffer, "error", "underline", 4)  
+  
   signal_connect(buffer, "changed") do widget, args...
     #TODO: only first time
     s = julietta.editor.currentDoc.filename
     s = isempty(s) ? "New File" : basename(s)
     G_.text(label,"*"*s)
-  end   
+  end 
   
   sourceDocument = SourceDocument(sw.handle, buffer, view, "", label, btnClose)
   Gtk.gc_move_ref(sourceDocument, sw)
 end
 
 function parse(doc::SourceDocument)
-  #ast = Base.parse(text(doc),raise=false)
-  #ast = Base.parse_input_line(text(doc))
+  Gtk.remove_tag(doc.buffer,"error",G_.start_iter(doc.buffer), G_.end_iter(doc.buffer))  
   
   cmd = text(doc)
   
@@ -76,7 +77,23 @@ function parse(doc::SourceDocument)
     if ast != nothing && typeof(ast) != Symbol &&
       (ast.head == :error || ast.head == :incomplete || ast.head == :continue)
       valid = false
-      println(ast," ",pos)
+      println("pos = ", pos)
+      it = Gtk.GtkTextIter(doc.buffer,pos) 
+  
+      lineNr = getproperty(it, :line, Cint)
+      println("lineNr = ", lineNr)
+      lineLen = getproperty(it, "chars_in_line", Cint)
+      println("lineLen = ", lineLen)
+  
+      if lineLen > 0 
+        lineLen -= 1
+      end
+  
+      itStart = Gtk.GtkTextIter(doc.buffer, lineNr+1, 1)     
+      itEnd = Gtk.GtkTextIter(doc.buffer, lineNr+1, lineLen+1) 
+       
+      Gtk.apply_tag(doc.buffer, "error", itStart, itEnd)
+
     end
     
     if pos >= endpos
@@ -157,6 +174,7 @@ end
 
 function indent!(doc::SourceDocument)
   b, itStart, itEnd = G_.selection_bounds(doc.buffer)
+  
   start_line = getproperty(itStart, :line, Cint)
   end_line = getproperty(itEnd, :line, Cint)
  

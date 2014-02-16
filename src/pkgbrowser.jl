@@ -91,7 +91,7 @@ end
 function dirwalk(store::TreeStore, path::String, parent=nothing)
   files = readdir(path)
   
-  println(files)
+  #println(files)
   
   for file in files
     stock = isdir(joinpath(path,file)) ? "gtk-directory" : "gtk-file"

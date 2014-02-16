@@ -47,7 +47,7 @@ function Terminal()
   
   terminal = Terminal(vbox.handle, id, entry, combo, textView)
   
-  execute(terminal,"import REPLCompletions")
+  execute(terminal,"import REPLCompletions", true)
   #execute(terminal,"using Winston")
   
   signal_connect(entry, "key-press-event") do widget, event, other...
