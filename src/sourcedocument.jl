@@ -50,7 +50,7 @@ function SourceDocument(lang::GtkSourceLanguage, scheme::GtkSourceStyleScheme)
   
   push!(btnClose,imClose)  
   
-  tag = Gtk.create_tag(buffer, "error", "underline", 4)  
+  tag = Gtk.create_tag(buffer, "error", underline=4)  
   
   signal_connect(buffer, "changed") do widget, args...
     #TODO: only first time
@@ -124,15 +124,15 @@ end
 
 function open(doc::SourceDocument)
     dlg = FileChooserDialog("Select file", NullContainer(), FileChooserAction.OPEN,
-                        Stock.CANCEL, GtkResponseType.CANCEL,
-                        Stock.OPEN, GtkResponseType.ACCEPT)
+                        "gtk-cancel", GtkResponseType.CANCEL,
+                        "gtk-open", GtkResponseType.ACCEPT)
     ret = run(dlg)
     if ret == GtkResponseType.ACCEPT
       open(doc, Gtk.bytestring(Gtk._.filename(dlg),true) )
     end
     destroy(dlg)
     
-    return (ret == Response.ACCEPT)
+    return (ret == GtkResponseType.ACCEPT)
 end
 
 function text(doc::SourceDocument)
@@ -151,8 +151,8 @@ end
 
 function saveas(doc::SourceDocument)
   dlg = FileChooserDialog("Select file", NullContainer(), FileChooserAction.SAVE,
-                               Stock.CANCEL, GtkResponseType.CANCEL,
-                               Stock.SAVE, GtkResponseType.ACCEPT)
+                               "gtk-cancel", GtkResponseType.CANCEL,
+                               "gtk-save", GtkResponseType.ACCEPT)
   G_.do_overwrite_confirmation(dlg,true)
     
   if isempty(doc.filename)
@@ -176,9 +176,9 @@ function close(doc::SourceDocument)
   
     dlg = MessageDialog(julietta, GtkDialogFlags.MODAL, GtkMessageType.QUESTION,
                       "File has unsaved changes. Do you want to save it?",
-                        Stock.CANCEL, GtkResponseType.CANCEL,
-                        Stock.NO, GtkResponseType.NO,
-                        Stock.YES, GtkResponseType.YES)
+                        "gtk-cancel", GtkResponseType.CANCEL,
+                        "gtk-no", GtkResponseType.NO,
+                        "gtk-yes", GtkResponseType.YES)
   
     ret = run(dlg)
 
