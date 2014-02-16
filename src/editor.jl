@@ -80,6 +80,12 @@ function push!(editor::Editor, doc::SourceDocument)
   
   signal_connect(doc.btnClose, "clicked") do widget
     i = pagenumber(editor.notebook, doc) + 1 # we need to fix this in Gtk.jl
+    
+    if close(doc)
+      #abort
+      return
+    end
+    
     splice!(editor.notebook,i)
     # TODO refactor!!!
     j = -1

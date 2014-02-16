@@ -138,7 +138,7 @@ function MainToolbar()
     dlg = SettingsDialog()
     
     ret = run(dlg)
-    if ret == GtkResponse.ACCEPT
+    if ret == GtkResponseType.ACCEPT
       acceptSettings(dlg)
       applySettings(dlg)
     end

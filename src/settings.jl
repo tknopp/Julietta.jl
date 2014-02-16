@@ -11,8 +11,8 @@ end
 function SettingsDialog()
 
   dialog = Dialog("Settings", julietta, GtkDialogFlags.MODAL,
-                        Stock.CANCEL, GtkResponse.CANCEL,
-                        Stock.OPEN, GtkResponse.ACCEPT)
+                        Stock.CANCEL, GtkResponseType.CANCEL,
+                        Stock.OPEN, GtkResponseType.ACCEPT)
 
   box = G_.content_area(dialog)
   

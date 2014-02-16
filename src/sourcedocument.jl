@@ -6,6 +6,7 @@ type SourceDocument <: Gtk.GtkScrolledWindowI
   buffer::GtkSourceBuffer
   view::GtkSourceView
   filename::String
+  unsavedChanges::Bool
   label
   btnClose
 end
@@ -20,7 +21,6 @@ function SourceDocument(lang::GtkSourceLanguage, scheme::GtkSourceStyleScheme)
   highlight_matching_brackets(buffer,true)
   highlight_current_line!(view, settings[:highlightCurrentLine])
   
-
   sw = ScrolledWindow()
   push!(sw,view)       
   
@@ -57,9 +57,10 @@ function SourceDocument(lang::GtkSourceLanguage, scheme::GtkSourceStyleScheme)
     s = julietta.editor.currentDoc.filename
     s = isempty(s) ? "New File" : basename(s)
     G_.text(label,"*"*s)
+    julietta.editor.currentDoc.unsavedChanges = true
   end 
   
-  sourceDocument = SourceDocument(sw.handle, buffer, view, "", label, btnClose)
+  sourceDocument = SourceDocument(sw.handle, buffer, view, "", false, label, btnClose)
   Gtk.gc_move_ref(sourceDocument, sw)
 end
 
@@ -77,13 +78,13 @@ function parse(doc::SourceDocument)
     if ast != nothing && typeof(ast) != Symbol &&
       (ast.head == :error || ast.head == :incomplete || ast.head == :continue)
       valid = false
-      println("pos = ", pos)
+      #println("pos = ", pos)
       it = Gtk.GtkTextIter(doc.buffer,pos) 
   
       lineNr = getproperty(it, :line, Cint)
-      println("lineNr = ", lineNr)
+      #println("lineNr = ", lineNr)
       lineLen = getproperty(it, "chars_in_line", Cint)
-      println("lineLen = ", lineLen)
+      #println("lineLen = ", lineLen)
   
       if lineLen > 0 
         lineLen -= 1
@@ -123,10 +124,10 @@ end
 
 function open(doc::SourceDocument)
     dlg = FileChooserDialog("Select file", NullContainer(), FileChooserAction.OPEN,
-                        Stock.CANCEL, GtkResponse.CANCEL,
-                        Stock.OPEN, GtkResponse.ACCEPT)
+                        Stock.CANCEL, GtkResponseType.CANCEL,
+                        Stock.OPEN, GtkResponseType.ACCEPT)
     ret = run(dlg)
-    if ret == GtkResponse.ACCEPT
+    if ret == GtkResponseType.ACCEPT
       open(doc, Gtk.bytestring(Gtk._.filename(dlg),true) )
     end
     destroy(dlg)
@@ -145,12 +146,13 @@ function save(doc::SourceDocument)
   write(stream,text(doc))
   close(stream)
   G_.text(doc.label,basename(doc.filename))
+  doc.unsavedChanges = false
 end
 
 function saveas(doc::SourceDocument)
   dlg = FileChooserDialog("Select file", NullContainer(), FileChooserAction.SAVE,
-                               Stock.CANCEL, GtkResponse.CANCEL,
-                               Stock.SAVE, GtkResponse.ACCEPT)
+                               Stock.CANCEL, GtkResponseType.CANCEL,
+                               Stock.SAVE, GtkResponseType.ACCEPT)
   G_.do_overwrite_confirmation(dlg,true)
     
   if isempty(doc.filename)
@@ -160,7 +162,7 @@ function saveas(doc::SourceDocument)
   end
   
   ret = run(dlg)
-  if ret == GtkResponse.ACCEPT
+  if ret == GtkResponseType.ACCEPT
     doc.filename = Gtk.bytestring(Gtk._.filename(dlg),true)
     save(doc)
   end
@@ -169,7 +171,27 @@ function saveas(doc::SourceDocument)
 end
 
 function close(doc::SourceDocument)
+  abort = false
+  if doc.unsavedChanges
+  
+    dlg = MessageDialog(julietta, GtkDialogFlags.MODAL, GtkMessageType.QUESTION,
+                      "File has unsaved changes. Do you want to save it?",
+                        Stock.CANCEL, GtkResponseType.CANCEL,
+                        Stock.NO, GtkResponseType.NO,
+                        Stock.YES, GtkResponseType.YES)
+  
+    ret = run(dlg)
 
+    if ret == GtkResponseType.YES
+      save(doc)
+    end
+    if ret == GtkResponseType.CANCEL
+      abort = true
+    end    
+    destroy(dlg)
+
+  end
+  abort
 end
 
 function indent!(doc::SourceDocument)
