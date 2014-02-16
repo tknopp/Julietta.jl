@@ -6,7 +6,7 @@ import Base: open, close, push!, parse
 #export PkgViewer, VariableViewer, ModuleBrowser, Editor, JuliettaWindow
 
 using Gtk
-using Gtk.ShortNames
+using Gtk.ShortNames, Gtk.GConstants
 
 include("settings.jl")
 include("pkg.jl")
@@ -116,9 +116,12 @@ function JuliettaWindow()
   ag = AccelGroup()
   push!(win,ag)
   
-  push!(saveIt, "activate", ag, keyval("s") ,  GdkModifierType.COMMAND,  GtkAccelFlags.VISIBLE)
+  # TODO
+  const COMMAND = @osx?  1 << 28 :  1 << 2
   
-  push!(quitIt, "activate", ag, keyval("q") , GdkModifierType.COMMAND, GtkAccelFlags.VISIBLE)  
+  push!(saveIt, "activate", ag, keyval("s") ,  COMMAND,  GtkAccelFlags.VISIBLE)
+  
+  push!(quitIt, "activate", ag, keyval("q") , COMMAND, GtkAccelFlags.VISIBLE)  
   
   global julietta = JuliettaWindow(win.handle,work,term,hist,browser,pkgbrowser,editor,maintoolbar)  
   

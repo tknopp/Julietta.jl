@@ -34,8 +34,8 @@ function MainToolbar()
   push!(toolbar,btnRun,SeparatorToolItem())
   push!(toolbar,btnIndent,btnUnindent,SeparatorToolItem()) 
   push!(toolbar,btnComment,btnUncomment,SeparatorToolItem()) 
-  G_.style(toolbar,ToolbarStyle.ICONS) #BOTH
-  #G_.icon_size(toolbar,IconSize.MENU)
+  G_.style(toolbar,GtkToolbarStyle.ICONS) #BOTH
+  #G_.icon_size(toolbar,GtkIconSize.MENU)
 
   
   btnHelp = ToolButton("gtk-help")
@@ -136,8 +136,13 @@ function MainToolbar()
 
   signal_connect(btnSettings, "clicked") do widget
     dlg = SettingsDialog()
+    
     ret = run(dlg)
-    destroy(dlg)
+    if ret == GtkResponse.ACCEPT
+      acceptSettings(dlg)
+      applySettings(dlg)
+    end
+    destroy(dlg)    
   end  
   
   signal_connect(btnClear, "clicked") do widget

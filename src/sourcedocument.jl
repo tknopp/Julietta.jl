@@ -15,9 +15,11 @@ function SourceDocument(lang::GtkSourceLanguage, scheme::GtkSourceStyleScheme)
   view = GtkSourceView(buffer)
   
   style_scheme!(buffer,scheme)
-  show_line_numbers!(view,true)
+  show_line_numbers!(view,settings[:showLineNumbers])
   auto_indent!(view,true)
   highlight_matching_brackets(buffer,true)
+  highlight_current_line!(view, settings[:highlightCurrentLine])
+  
 
   sw = ScrolledWindow()
   push!(sw,view)       
@@ -25,10 +27,10 @@ function SourceDocument(lang::GtkSourceLanguage, scheme::GtkSourceStyleScheme)
   label = Label("New File")
   G_.margin_right(label,4)
 
-  imClose = Image(stock_id="gtk-close",size=:menu)
+  imClose = Image(stock_id="gtk-close",size=:MENU)
 
   btnClose = Button()
-  G_.relief(btnClose, ReliefStyle.NONE)
+  G_.relief(btnClose, GtkReliefStyle.NONE)
   G_.focus_on_click(btnClose, false)
   
   btnstyle =  ".button {\n" *
@@ -61,9 +63,29 @@ end
 
 function parse(doc::SourceDocument)
   #ast = Base.parse(text(doc),raise=false)
-  ast = Base.parse_input_line(text(doc))
-  if ast != nothing && typeof(ast) != Symbol &&
-    (ast.head == :error || ast.head == :incomplete || ast.head == :continue)
+  #ast = Base.parse_input_line(text(doc))
+  
+  cmd = text(doc)
+  
+  pos = 1
+  endpos = length(cmd)
+  valid = true
+  while true
+    ast,pos = parse(cmd, pos, greedy=true, raise=false)
+    
+    if ast != nothing && typeof(ast) != Symbol &&
+      (ast.head == :error || ast.head == :incomplete || ast.head == :continue)
+      valid = false
+      println(ast," ",pos)
+    end
+    
+    if pos >= endpos
+      break
+    end   
+    
+  end
+  
+  if !valid
     G_.markup(doc.label, 
        "<span foreground=\"red\">" * bytestring(G_.text(doc.label)) * "</span>")
   else
@@ -84,10 +106,10 @@ end
 
 function open(doc::SourceDocument)
     dlg = FileChooserDialog("Select file", NullContainer(), FileChooserAction.OPEN,
-                        Stock.CANCEL, Response.CANCEL,
-                        Stock.OPEN, Response.ACCEPT)
+                        Stock.CANCEL, GtkResponse.CANCEL,
+                        Stock.OPEN, GtkResponse.ACCEPT)
     ret = run(dlg)
-    if ret == Response.ACCEPT
+    if ret == GtkResponse.ACCEPT
       open(doc, Gtk.bytestring(Gtk._.filename(dlg),true) )
     end
     destroy(dlg)
@@ -110,8 +132,8 @@ end
 
 function saveas(doc::SourceDocument)
   dlg = FileChooserDialog("Select file", NullContainer(), FileChooserAction.SAVE,
-                               Stock.CANCEL, Response.CANCEL,
-                               Stock.SAVE, Response.ACCEPT)
+                               Stock.CANCEL, GtkResponse.CANCEL,
+                               Stock.SAVE, GtkResponse.ACCEPT)
   G_.do_overwrite_confirmation(dlg,true)
     
   if isempty(doc.filename)
@@ -121,7 +143,7 @@ function saveas(doc::SourceDocument)
   end
   
   ret = run(dlg)
-  if ret == Response.ACCEPT
+  if ret == GtkResponse.ACCEPT
     doc.filename = Gtk.bytestring(Gtk._.filename(dlg),true)
     save(doc)
   end

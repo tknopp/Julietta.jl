@@ -94,3 +94,18 @@ function push!(editor::Editor, doc::SourceDocument)
   
   showall(editor.notebook)   
 end
+
+### settings
+
+function show_line_numbers(editor::Editor, val::Bool)
+  for d in editor.documents
+    show_line_numbers!(d.view, val )
+  end
+end
+
+function highlight_current_line(editor::Editor, val::Bool)
+  for d in editor.documents
+    highlight_current_line!(d.view, val )
+  end
+end
+

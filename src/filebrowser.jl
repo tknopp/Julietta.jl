@@ -50,8 +50,8 @@ function FileBrowser()
   setproperty!(entry,:editable,false)
   toolbar = Toolbar()
   push!(toolbar,btnUp,btnChooser, btnHome, btnPkgDir)
-  G_.style(toolbar,ToolbarStyle.ICONS)
-  G_.icon_size(toolbar,IconSize.MENU)
+  G_.style(toolbar,GtkToolbarStyle.ICONS)
+  G_.icon_size(toolbar,GtkIconSize.MENU)
   
   box = BoxLayout(:v)
   push!(box,combo)
@@ -83,10 +83,10 @@ function FileBrowser()
   
   signal_connect(btnChooser, "clicked") do widget
     dlg = FileChooserDialog("Select folder", NullContainer(), FileChooserAction.SELECT_FOLDER,
-                        Stock.CANCEL, Response.CANCEL,
-                        Stock.OPEN, Response.ACCEPT)
+                        Stock.CANCEL, GtkResponse.CANCEL,
+                        Stock.OPEN, GtkResponse.ACCEPT)
     ret = run(dlg)
-    if ret == Response.ACCEPT
+    if ret == GtkResponse.ACCEPT
       path = Gtk.bytestring(Gtk._.filename(dlg),true)
       changedir!(browser,path)
     end

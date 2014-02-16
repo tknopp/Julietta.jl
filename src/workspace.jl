@@ -24,7 +24,7 @@ function Workspace()
   G_.max_width(c4,80)
   push!(tv,c1,c2,c3,c4)
   
-  G_.sort_column_id(store,0,SortType.ASCENDING)
+  G_.sort_column_id(store,0,GtkSortType.ASCENDING)
 
   sw = ScrolledWindow()
   push!(sw,tv) 
