@@ -114,4 +114,3 @@ function highlight_current_line(editor::Editor, val::Bool)
     highlight_current_line!(d.view, val )
   end
 end
-
