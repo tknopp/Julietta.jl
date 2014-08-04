@@ -1,25 +1,23 @@
-type PkgViewer <: Gtk.GtkWindowI
-  handle::Ptr{Gtk.GObjectI}
-  builder::GtkBuilder
-  store::GtkListStore
+type PkgViewer <: Gtk.GtkWindow
+  handle::Ptr{Gtk.GObject}
+  builder
+  store
 end
 
+const pkguifile = joinpath( dirname(Base.source_path()), "pkgviewer.ui" )
+
 function PkgViewer()
-  filename = joinpath(dirname(Base.source_path()),"pkgviewer.ui")
-  if !isfile(filename)
-    filename = Pkg.dir("Julietta.jl","src","pkgviewer.ui")
-  end
-  builder = Builder(filename=filename)
+  builder = @Builder(filename=pkguifile)
   
-  store = ListStore(String,String,Bool)
+  store = @ListStore(String,String,Bool)
   tmFiltered = nothing
   
-  tv = TreeView(store)
-  r1 = CellRendererText()
-  r2 = CellRendererToggle()
-  c1 = TreeViewColumn("Name", r1, {"text" => 0})
-  c2 = TreeViewColumn("Version", r1,{"text" => 1})
-  c3 = TreeViewColumn("Installed", r2,{"active" => 2})
+  tv = @TreeView(TreeModel(store))
+  r1 = @CellRendererText()
+  r2 = @CellRendererToggle()
+  c1 = @TreeViewColumn("Name", r1, {"text" => 0})
+  c2 = @TreeViewColumn("Version", r1,{"text" => 1})
+  c3 = @TreeViewColumn("Installed", r2,{"active" => 2})
   G_.sort_column_id(c1,0)
   G_.sort_column_id(c2,1)
   G_.sort_column_id(c3,2)
@@ -121,4 +119,5 @@ function PkgViewer()
   
   pkgViewer = PkgViewer(win.handle,builder,store)
   Gtk.gc_move_ref(pkgViewer, win)
+  pkgViewer
 end

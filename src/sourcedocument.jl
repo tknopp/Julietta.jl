@@ -1,10 +1,10 @@
 using GtkSourceWidget
 
 
-type SourceDocument <: Gtk.GtkScrolledWindowI
-  handle::Ptr{Gtk.GObjectI}
-  buffer::GtkSourceBuffer
-  view::GtkSourceView
+type SourceDocument <: Gtk.GtkScrolledWindow
+  handle::Ptr{Gtk.GObject}
+  buffer
+  view
   filename::String
   unsavedChanges::Bool
   label
@@ -12,8 +12,8 @@ type SourceDocument <: Gtk.GtkScrolledWindowI
 end
 
 function SourceDocument(lang::GtkSourceLanguage, scheme::GtkSourceStyleScheme)
-  buffer = GtkSourceBuffer(lang)
-  view = GtkSourceView(buffer)
+  buffer = @GtkSourceBuffer(lang)
+  view = @GtkSourceView(buffer)
   
   style_scheme!(buffer,scheme)
   show_line_numbers!(view,settings[:showLineNumbers])
@@ -21,15 +21,15 @@ function SourceDocument(lang::GtkSourceLanguage, scheme::GtkSourceStyleScheme)
   highlight_matching_brackets(buffer,true)
   highlight_current_line!(view, settings[:highlightCurrentLine])
   
-  sw = ScrolledWindow()
+  sw = @ScrolledWindow()
   push!(sw,view)       
   
-  label = Label("New File")
+  label = @Label("New File")
   G_.margin_right(label,4)
 
-  imClose = Image(stock_id="gtk-close",size=:MENU)
+  imClose = @Image(stock_id="gtk-close",size=:MENU)
 
-  btnClose = Button()
+  btnClose = @Button()
   G_.relief(btnClose, GtkReliefStyle.NONE)
   G_.focus_on_click(btnClose, false)
   
@@ -41,14 +41,17 @@ function SourceDocument(lang::GtkSourceLanguage, scheme::GtkSourceStyleScheme)
           "-GtkWidget-focus-padding : 0px;\n" *
           "padding: 0px;\n" *
           "}"
-  provider = CssProvider(data=btnstyle)
+  provider = @CssProvider(data=btnstyle)
   
   # TODO fix
-  sc = StyleContext(convert(Ptr{Gtk.GObject},G_.style_context(btnClose)))
+  sc = G_.style_context(btnClose) # @StyleContext(convert(Ptr{Gtk.GObject},G_.style_context(btnClose)))
   # 600 = GTK_STYLE_PROVIDER_PRIORITY_APPLICATION
-  push!(sc, provider, 600)
+  push!(sc, StyleProvider(provider), 600)
   
   push!(btnClose,imClose)  
+
+  showall(btnClose)
+  showall(label)
   
   tag = Gtk.create_tag(buffer, "error", underline=4)  
   
@@ -58,10 +61,12 @@ function SourceDocument(lang::GtkSourceLanguage, scheme::GtkSourceStyleScheme)
     s = isempty(s) ? "New File" : basename(s)
     G_.text(label,"*"*s)
     julietta.editor.currentDoc.unsavedChanges = true
+    showall(label)
   end 
   
   sourceDocument = SourceDocument(sw.handle, buffer, view, "", false, label, btnClose)
   Gtk.gc_move_ref(sourceDocument, sw)
+  sourceDocument
 end
 
 function parse(doc::SourceDocument)
@@ -110,6 +115,8 @@ function parse(doc::SourceDocument)
     G_.markup(doc.label, 
        "<span foreground=\"green\">" * bytestring(G_.text(doc.label)) * "</span>")
   end
+
+  showall(doc.label)
 end
 
 function open(doc::SourceDocument, filename::String)
@@ -118,17 +125,18 @@ function open(doc::SourceDocument, filename::String)
       
   G_.text(doc.buffer,txt,-1)
   G_.text(doc.label,basename(doc.filename))
+  showall(doc.label)
   
   parse(doc)
 end
 
 function open(doc::SourceDocument)
-    dlg = FileChooserDialog("Select file", NullContainer(), FileChooserAction.OPEN,
+    dlg = @FileChooserDialog("Select file", @Null(), GtkFileChooserAction.OPEN,
                         "gtk-cancel", GtkResponseType.CANCEL,
                         "gtk-open", GtkResponseType.ACCEPT)
     ret = run(dlg)
     if ret == GtkResponseType.ACCEPT
-      open(doc, Gtk.bytestring(Gtk._.filename(dlg),true) )
+      open(doc, Gtk.bytestring(Gtk._.filename( GtkFileChooser(dlg) ),true) )
     end
     destroy(dlg)
     
@@ -146,19 +154,20 @@ function save(doc::SourceDocument)
   write(stream,text(doc))
   close(stream)
   G_.text(doc.label,basename(doc.filename))
+  showall(doc.label)
   doc.unsavedChanges = false
 end
 
 function saveas(doc::SourceDocument)
-  dlg = FileChooserDialog("Select file", NullContainer(), FileChooserAction.SAVE,
+  dlg = @FileChooserDialog("Select file", @Null(), GtkFileChooserAction.SAVE,
                                "gtk-cancel", GtkResponseType.CANCEL,
                                "gtk-save", GtkResponseType.ACCEPT)
-  G_.do_overwrite_confirmation(dlg,true)
+  G_.do_overwrite_confirmation( GtkFileChooser(dlg) ,true)
     
   if isempty(doc.filename)
-    G_.current_name(dlg,"Untitled document")
+    G_.current_name( GtkFileChooser(dlg), "Untitled document")
   else
-    G_.filename(dlg,doc.filename)
+    G_.filename( GtkFileChooser(dlg) ,doc.filename)
   end
   
   ret = run(dlg)
@@ -174,7 +183,7 @@ function close(doc::SourceDocument)
   abort = false
   if doc.unsavedChanges
   
-    dlg = MessageDialog(julietta, GtkDialogFlags.MODAL, GtkMessageType.QUESTION,
+    dlg = @MessageDialog(julietta, GtkDialogFlags.MODAL, GtkMessageType.QUESTION,
                       "File has unsaved changes. Do you want to save it?",
                         "gtk-cancel", GtkResponseType.CANCEL,
                         "gtk-no", GtkResponseType.NO,
@@ -236,7 +245,7 @@ function unindent!(doc::SourceDocument)
     if getproperty(it, :char, Char) == '\t'
       it2 = it + 1
       #skip(Gtk.mutable(it2),1)
-      #range_ = Gtk.GtkTextRange(it,it2)
+      #range_ = Gtk.@GtkTextRange(it,it2)
       splice!(doc.buffer,it2)#range_)
      end
   end

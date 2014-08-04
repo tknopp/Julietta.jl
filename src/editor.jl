@@ -1,7 +1,7 @@
 using GtkSourceWidget
 
-type Editor <: Gtk.GtkBoxI
-  handle::Ptr{Gtk.GObjectI}
+type Editor <: Gtk.GtkBox
+  handle::Ptr{Gtk.GObject}
   documents::Vector{SourceDocument}
   notebook::Notebook
   lang
@@ -12,19 +12,19 @@ end
 
 function Editor()
   
-  m = GtkSourceLanguageManager()
+  m = @GtkSourceLanguageManager()
   l = GtkSourceWidget.language(m,"julia")
   
   documents = SourceDocument[]
   
-  sm = GtkSourceStyleSchemeManager()
+  sm = @GtkSourceStyleSchemeManager()
   s = style_scheme(sm,"kate")
   
-  nb = Notebook()
+  nb = @Notebook()
   
-  vbox = BoxLayout(:v)
+  vbox = @Box(:v)
   push!(vbox,nb)
- setproperty!(vbox,:expand,nb,true)
+  setproperty!(vbox,:expand,nb,true)
   
   editor = Editor(vbox.handle, documents, nb, l, s, nothing, 0 ) 
   
@@ -40,11 +40,12 @@ function Editor()
        if editor.currentDoc != nothing
          parse(editor.currentDoc)
        end
-       sleep(2)
+       sleep(1)
      end
    end   
   
   Gtk.gc_move_ref(editor, vbox)
+  editor
 end
 
 function open(editor::Editor, filename::String)
@@ -65,7 +66,7 @@ end
 
 function push!(editor::Editor, doc::SourceDocument)
 
-  hbox = BoxLayout(:h)
+  hbox = @Box(:h)
   push!(hbox,doc.label)
   push!(hbox,doc.btnClose) 
 

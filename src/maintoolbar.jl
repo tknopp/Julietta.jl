@@ -1,6 +1,6 @@
 
-type MainToolbar <: Gtk.GtkToolbarI
-  handle::Ptr{Gtk.GObjectI}
+type MainToolbar <: Gtk.GtkToolbar
+  handle::Ptr{Gtk.GObject}
   btnNew
   btnOpen
   btnSave
@@ -15,40 +15,40 @@ type MainToolbar <: Gtk.GtkToolbarI
 end
 
 function MainToolbar()
-  btnNew = ToolButton("gtk-new")
-  btnOpen = ToolButton("gtk-open")
-  btnSave = ToolButton("gtk-save")
-  btnSaveAs = ToolButton("gtk-save-as")  
-  btnUndo = ToolButton("gtk-undo")
-  btnRedo = ToolButton("gtk-redo")
-  btnRun = ToolButton("gtk-media-play")
-  btnIndent = ToolButton("gtk-indent")
-  btnUnindent = ToolButton("gtk-unindent")
-  btnComment = ToolButton("gtk-indent")
-  btnUncomment = ToolButton("gtk-unindent")  
-  btnAbout = ToolButton("gtk-about")
+  btnNew = @ToolButton("gtk-new")
+  btnOpen = @ToolButton("gtk-open")
+  btnSave = @ToolButton("gtk-save")
+  btnSaveAs = @ToolButton("gtk-save-as")  
+  btnUndo = @ToolButton("gtk-undo")
+  btnRedo = @ToolButton("gtk-redo")
+  btnRun = @ToolButton("gtk-media-play")
+  btnIndent = @ToolButton("gtk-indent")
+  btnUnindent = @ToolButton("gtk-unindent")
+  btnComment = @ToolButton("gtk-indent")
+  btnUncomment = @ToolButton("gtk-unindent")  
+  btnAbout = @ToolButton("gtk-about")
   
-  toolbar = Toolbar()
-  push!(toolbar,btnNew,btnOpen,btnSave,btnSaveAs,SeparatorToolItem())
-  push!(toolbar,btnUndo,btnRedo,SeparatorToolItem())
-  push!(toolbar,btnRun,SeparatorToolItem())
-  push!(toolbar,btnIndent,btnUnindent,SeparatorToolItem()) 
-  push!(toolbar,btnComment,btnUncomment,SeparatorToolItem()) 
+  toolbar = @Toolbar()
+  push!(toolbar,btnNew,btnOpen,btnSave,btnSaveAs,@SeparatorToolItem())
+  push!(toolbar,btnUndo,btnRedo,@SeparatorToolItem())
+  push!(toolbar,btnRun,@SeparatorToolItem())
+  push!(toolbar,btnIndent,btnUnindent,@SeparatorToolItem()) 
+  push!(toolbar,btnComment,btnUncomment,@SeparatorToolItem()) 
   G_.style(toolbar,GtkToolbarStyle.ICONS) #BOTH
   #G_.icon_size(toolbar,GtkIconSize.MENU)
 
   
-  btnHelp = ToolButton("gtk-help")
-  btnSettings = ToolButton("gtk-preferences")
-  btnClear = ToolButton("gtk-clear")
+  btnHelp = @ToolButton("gtk-help")
+  btnSettings = @ToolButton("gtk-preferences")
+  btnClear = @ToolButton("gtk-clear")
   push!(toolbar,btnHelp,btnSettings,btnClear, btnAbout)
   
   # Add spinner
-  spItem = ToolItem()
-  spinner = Spinner()
+  spItem = @ToolItem()
+  spinner = @Spinner()
   G_.size_request(spinner, 23,-1)
   push!(spItem,spinner)
-  spSep = SeparatorToolItem()
+  spSep = @SeparatorToolItem()
   setproperty!(spSep,:draw,false)
   setproperty!(spItem,:margin, 5)
   push!(toolbar,spSep,spItem)
@@ -131,7 +131,8 @@ function MainToolbar()
   
   
   signal_connect(btnHelp, "clicked") do widget
-    ModuleBrowser()
+    m = ModuleBrowser()
+    showall(m)
   end
 
   signal_connect(btnSettings, "clicked") do widget
@@ -157,7 +158,7 @@ function MainToolbar()
   
   
   signal_connect(btnAbout, "clicked") do widget
-    dlg = AboutDialog()
+    dlg = @AboutDialog()
     G_.program_name(dlg,"Julietta")
     G_.version(dlg,"0.0.0")
     
@@ -166,4 +167,5 @@ function MainToolbar()
   end     
   
   Gtk.gc_move_ref(maintoolbar, toolbar)
+  maintoolbar
 end

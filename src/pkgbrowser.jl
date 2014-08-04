@@ -1,21 +1,21 @@
 
 
-type PkgBrowser <: Gtk.GtkBoxI
-  handle::Ptr{Gtk.GObjectI}
+type PkgBrowser <: Gtk.GtkBox
+  handle::Ptr{Gtk.GObject}
   path::String
-  store::TreeStore
-  combo::GtkComboBoxText
+  store
+  combo
   recentFolder::Vector{String}
 end
 
 function PkgBrowser()
-  store = TreeStore(String,String)
+  store = @TreeStore(String,String)
   
-  tv = TreeView(store)
+  tv = @TreeView(TreeModel(store))
   G_.headers_visible(tv,false)  
-  r1 = CellRendererPixbuf()
-  r2 = CellRendererText()
-  c1 = TreeViewColumn("Files", r1, {"stock-id" => 1})
+  r1 = @CellRendererPixbuf()
+  r2 = @CellRendererText()
+  c1 = @TreeViewColumn("Files", r1, {"stock-id" => 1})
   push!(c1,r2)
   Gtk.add_attribute(c1,r2,"text",0)
   G_.sort_column_id(c1,0)
@@ -23,12 +23,12 @@ function PkgBrowser()
   G_.max_width(c1,80)
   push!(tv,c1)
 
-  sw = ScrolledWindow()
+  sw = @ScrolledWindow()
   push!(sw,tv)
   
-  combo = GtkComboBoxText(false)
+  combo = @GtkComboBoxText(false)
   
-  box = BoxLayout(:v)
+  box = @Box(:v)
   push!(box,combo)
   push!(box,sw)
   setproperty!(box,:expand,sw,true)
@@ -54,9 +54,9 @@ function PkgBrowser()
     if hasselection(selection)
       m, currentIt = selected(selection)
 
-      filepath = store[currentIt][1]
+      filepath = TreeModel(store)[currentIt][1]
 
-      treepath = Gtk.path(store,currentIt)
+      treepath = Gtk.path( TreeModel(store) , currentIt)
       
       println(Gtk.depth(treepath))
       
@@ -81,6 +81,7 @@ function PkgBrowser()
   end
   
   Gtk.gc_move_ref(browser, box)
+  browser
 end
 
 function changedir!(browser::PkgBrowser, path::String)

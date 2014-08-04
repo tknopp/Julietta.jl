@@ -1,18 +1,18 @@
 
-type Workspace <: Gtk.GtkBoxI
-  handle::Ptr{Gtk.GObjectI}
-  store::ListStore
+type Workspace <: Gtk.GtkBox
+  handle::Ptr{Gtk.GObject}
+  store
 end
 
 function Workspace()
-  store = ListStore(String,String,String,String)
+  store = @ListStore(String,String,String,String)
   
-  tv = TreeView(store)
-  r1 = CellRendererText()
-  c1 = TreeViewColumn("Name", r1, {"text" => 0})
-  c2 = TreeViewColumn("Type", r1,{"text" => 1})
-  c3 = TreeViewColumn("Size", r1,{"text" => 2})
-  c4 = TreeViewColumn("Value/Size", r1,{"text" => 3})
+  tv = @TreeView(TreeModel(store))
+  r1 = @CellRendererText()
+  c1 = @TreeViewColumn("Name", r1, {"text" => 0})
+  c2 = @TreeViewColumn("Type", r1,{"text" => 1})
+  c3 = @TreeViewColumn("Size", r1,{"text" => 2})
+  c4 = @TreeViewColumn("Value/Size", r1,{"text" => 3})
   G_.sort_column_id(c1,0)
   G_.resizable(c1,true)
   G_.sort_column_id(c2,1)
@@ -24,16 +24,16 @@ function Workspace()
   G_.max_width(c4,80)
   push!(tv,c1,c2,c3,c4)
   
-  G_.sort_column_id(store,0,GtkSortType.ASCENDING)
+  G_.sort_column_id(TreeSortable(store),0,GtkSortType.ASCENDING)
 
-  sw = ScrolledWindow()
+  sw = @ScrolledWindow()
   push!(sw,tv) 
 
-  box = BoxLayout(:v)
+  box = @Box(:v)
   push!(box,sw)
   setproperty!(box,:expand,sw,true)  
 
-  workspace = Workspace(box.handle, store)
+  workspace = Workspace(box, store)
 
   selection = G_.selection(tv)   
 
@@ -58,7 +58,7 @@ function Workspace()
             end
          end
           
-         popupmenu = Menu()
+         popupmenu = @Menu()
          push!(popupmenu, item)
          popup(popupmenu, event)          
 
@@ -71,6 +71,7 @@ function Workspace()
   
   
   Gtk.gc_move_ref(workspace, box)
+  workspace
 end
 
 function update!(work::Workspace, term)

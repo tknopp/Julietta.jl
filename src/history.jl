@@ -1,6 +1,6 @@
 
-type History <: Gtk.GtkBoxI
-  handle::Ptr{Gtk.GObjectI}
+type History <: Gtk.GtkBox
+  handle::Ptr{Gtk.GObject}
   filename::String
   store::ListStore
   commands::Vector{String}
@@ -8,20 +8,20 @@ type History <: Gtk.GtkBoxI
 end
 
 function History()
-  store = ListStore(String)
+  store = @ListStore(String)
   
-  tv = TreeView(store)
-  r1 = CellRendererText()
-  c1 = TreeViewColumn("History", r1, {"text" => 0})
+  tv = @TreeView(TreeModel(store))
+  r1 = @CellRendererText()
+  c1 = @TreeViewColumn("History", r1, {"text" => 0})
   G_.sort_column_id(c1,0)
   G_.resizable(c1,true)
   G_.max_width(c1,80)
   push!(tv,c1)
 
-  sw = ScrolledWindow()
+  sw = @ScrolledWindow()
   push!(sw,tv)  
 
-  box = BoxLayout(:v)
+  box = @Box(:v)
   push!(box,sw)
   setproperty!(box,:expand,sw,true)
 
@@ -56,6 +56,7 @@ function History()
   end  
   
   Gtk.gc_move_ref(history, box)
+  history
 end
 
 function push!(hist::History,cmd::String, silent::Bool=false)
@@ -79,5 +80,3 @@ function nextcmd!(hist::History)
   hist.iter = (hist.iter == length(hist.commands)) ? length(hist.commands) : hist.iter + 1
   hist.commands[hist.iter]
 end
-
-

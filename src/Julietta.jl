@@ -5,8 +5,7 @@ import Base: open, close, push!, parse
 
 #export PkgViewer, VariableViewer, ModuleBrowser, Editor, JuliettaWindow
 
-using Gtk
-using Gtk.ShortNames, Gtk.GConstants
+using Gtk, Gtk.ShortNames, Gtk.GConstants
 
 include("settings.jl")
 include("pkg.jl")
@@ -21,8 +20,8 @@ include("pkgbrowser.jl")
 include("maintoolbar.jl")
 include("symbols.jl")
 
-type JuliettaWindow <: Gtk.GtkWindowI
-  handle::Ptr{Gtk.GObjectI}
+type JuliettaApp 
+  app::GtkApplication
   work::Workspace
   term::Terminal
   hist::History
@@ -31,12 +30,41 @@ type JuliettaWindow <: Gtk.GtkWindowI
   editor::Editor
   maintoolbar::MainToolbar
   #symbols::Symbols
+  win
 end
 
 # This is the global Julietta instance
 julietta = nothing
 
-function JuliettaWindow()
+const menustr =
+    """<interface>
+       <menu id="menubar">
+          <submenu>
+          <attribute name="label">File</attribute>
+             <item>
+                <attribute name="label">Quit</attribute>
+                <attribute name="action">app.quit</attribute>
+             </item>
+          </submenu>
+          <submenu>
+          <attribute name="label">Help</attribute>
+        </submenu>
+      </menu>
+      <menu id="appmenu">
+        <section>
+          <item>
+            <attribute name="label">Save</attribute>
+            <attribute name="action">app.save</attribute>
+          </item>
+          <item>
+            <attribute name="label">Quit</attribute>
+            <attribute name="action">app.quit</attribute>
+          </item>
+        </section>
+      </menu>
+     </interface>"""
+
+function JuliettaApp()
 
   hist = History()      
   work = Workspace()
@@ -45,17 +73,17 @@ function JuliettaWindow()
   #symbols = Symbols()
   maintoolbar = MainToolbar()
   
-  nb = Notebook()
+  nb = @Notebook()
   push!(nb, work, "Workspace")
   push!(nb, hist, "History")
   
-  nb2 = Notebook()
+  nb2 = @Notebook()
   push!(nb2, browser, "Documents")
   push!(nb2, pkgbrowser, "Packages")
   #push!(nb2, symbols, "Symbols") 
   
   
-  panedL2 = Paned(:v)
+  panedL2 = @Paned(:v)
   panedL2[1] = nb2
   panedL2[2] = nb
   G_.position(panedL2,500)  
@@ -67,13 +95,13 @@ function JuliettaWindow()
   editor = Editor()
   term = Terminal()
   
-  panedR = Paned(:v)
+  panedR = @Paned(:v)
   panedR[1] = editor
   panedR[2] = term
   G_.position(panedR,500)
   
   
-  hbox = Paned(:h)
+  hbox = @Paned(:h)
   hbox[1] = panedL2
   hbox[2] = panedR
   G_.position(hbox,350)
@@ -81,67 +109,76 @@ function JuliettaWindow()
   #setproperty!(hbox,"upper-margin", 5)
   #setproperty!(hbox,"lower-margin", 5)
   
+   
   
-  file = MenuItem("_File")
-  filemenu = Menu(file)
-  saveIt = MenuItem("Save")
-  signal_connect(saveIt, :activate) do widget
-     save(julietta.editor.currentDoc)
-  end
-  push!(filemenu, saveIt)
-  push!(filemenu, SeparatorMenuItem())
-  quitIt = MenuItem("Quit")
-  signal_connect(quitIt, :activate) do widget
-     exit()
-  end  
-  push!(filemenu, quitIt)
-  mb = MenuBar()
-  push!(mb, file)  # notice this is the "File" item, not filemenu
-  
-  #G_.accel_path(new_ ,"<control>s")#, AccelGroup())
-  
-
-  
-  
-  vbox = BoxLayout(:v)
-  push!(vbox,mb)
+  vbox = @Box(:v)
   push!(vbox,maintoolbar)
   push!(vbox,hbox)
   setproperty!(vbox,:expand,hbox,true)  
   
-  win = GtkWindow("Julietta",1024,768)
-  push!(win,vbox)  
-  showall(win)
+  app = @GtkApplication("org.julia.example", GApplicationFlags.FLAGS_NONE)
   
-  ag = AccelGroup()
-  push!(win,ag)
-  
-  # TODO
-  const COMMAND = @osx?  1 << 28 :  1 << 2
-  
-  push!(saveIt, "activate", ag, keyval("s") ,  COMMAND,  GtkAccelFlags.VISIBLE)
-  
-  push!(quitIt, "activate", ag, keyval("q") , COMMAND, GtkAccelFlags.VISIBLE)  
-  
-  global julietta = JuliettaWindow(win.handle,work,term,hist,browser,pkgbrowser,editor,maintoolbar)  
-  
-  rd, wr = redirect_stdout()
+  signal_connect(app,"activate") do a, args...
+    win = Gtk.@GtkApplicationWindow(app)
+    G_.title(win, "Julietta" )
+    G_.default_size(win, 1024,768)
+    
+    julietta.win = win
+    
+    builder = @GtkBuilder(buffer=menustr)
 
-  @schedule begin
-     while(true)
+    menubar = G_.object(builder,"menubar")
+    appmenu = G_.object(builder,"appmenu")
+
+    Gtk.set_menubar(app, menubar)
+    Gtk.set_app_menu(app, appmenu)
+
+    push!(win,vbox)  
+    showall(win)
+ 
+
+    quitAction = Gtk.@GSimpleAction("quit")
+    signal_connect(quitAction, :activate) do widget...
+       exit()
+    end
+    push!( Gtk.GActionMap(app), Gtk.GAction(quitAction) )
+
+    Gtk.add_accelerator(app, "<Primary>q", "app.quit")
+
+
+    saveAction = Gtk.@GSimpleAction("save")
+    signal_connect(saveAction, :activate) do widget...
+       save(julietta.editor.currentDoc)
+    end
+    push!( Gtk.GActionMap(app), Gtk.GAction(saveAction) )
+
+    Gtk.add_accelerator(app, "<Primary>s", "app.save")
+
+
+    rd, wr = redirect_stdout()
+
+    @schedule begin
+       while(true)
         response = readavailable(rd)
         if !isempty(response)
           response = replace(response, "From worker 2:	", "")
           insert!(julietta.term.textView,string(response)) #,"\n"
         end
-     end
-   end  
+       end
+     end  
   
-  signal_connect(win,"destroy") do object, args...
-   exit()
+    signal_connect(win,"destroy") do object, args...
+     exit()
+    end
   end
 
-  Gtk.gc_move_ref(julietta, win)
+  global julietta = JuliettaApp(app,work,term,hist,browser,pkgbrowser,editor,maintoolbar,nothing)  
+  julietta
 end
 
-#end #module
+function run_julietta()
+  j = JuliettaApp()
+  Gtk.run(j.app)
+end
+
+#end module

@@ -1,8 +1,8 @@
 
 const settings = Dict()
 
-type SettingsDialog <: Gtk.GtkDialogI
-  handle::Ptr{Gtk.GObjectI}
+type SettingsDialog <: Gtk.GtkDialog
+  handle::Ptr{Gtk.GObject}
   cbxShowLineNumbers
   cbxHighlightCurrentLine
   btnFont
@@ -10,26 +10,26 @@ end
 
 function SettingsDialog()
 
-  dialog = Dialog("Settings", julietta, GtkDialogFlags.MODAL,
+  dialog = @Dialog("Settings", julietta.win, GtkDialogFlags.MODAL,
                         "gtk-cancel", GtkResponseType.CANCEL,
                         "gtk-ok", GtkResponseType.ACCEPT)
 
   box = G_.content_area(dialog)
   
-  nb = Notebook()
+  nb = @Notebook()
   
-  vboxEditor = BoxLayout(:v)
+  vboxEditor = @Box(:v)
   
   
-  cbxShowLineNumbers = CheckButton("Show line numbers")
-  cbxHighlightCurrentLine = CheckButton("Highlight current line")
+  cbxShowLineNumbers = @CheckButton("Show line numbers")
+  cbxHighlightCurrentLine = @CheckButton("Highlight current line")
   
   push!(vboxEditor,cbxShowLineNumbers)
   push!(vboxEditor,cbxHighlightCurrentLine)
   setproperty!(cbxShowLineNumbers,:active,true)  
   setproperty!(cbxHighlightCurrentLine,:active,false)
 
-  btnFont = FontButton()
+  btnFont = @FontButton()
   push!(vboxEditor,btnFont)  
   
   push!(nb, vboxEditor, "Editor")
@@ -45,6 +45,7 @@ function SettingsDialog()
   showall(box)
   
   Gtk.gc_move_ref(settings, dialog)
+  settings
 end
 
 function initSettings()

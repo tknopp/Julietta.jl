@@ -1,26 +1,24 @@
 
-type ModuleBrowser <: Gtk.GtkWindowI
-  handle::Ptr{Gtk.GObjectI}
+type ModuleBrowser <: Gtk.GtkWindow
+  handle::Ptr{Gtk.GObject}
 end
+
+const moduleuifile = joinpath( dirname(Base.source_path()), "moduleBrowser.ui" )
 
 function ModuleBrowser()
   @async Base.Help.init_help()
 
-  filename = joinpath(dirname(Base.source_path()),"moduleBrowser.ui")
-  if !isfile(filename)
-    filename = Pkg.dir("JuliaTools.jl","src","moduleBrowser.ui")
-  end
-  builder = Builder(filename=filename)
+  builder = @Builder(filename=moduleuifile)
 
-  storeModules = ListStore(String)
+  storeModules = @ListStore(String)
   
-  tvModules = TreeView(storeModules)
-  rModules1 = CellRendererText()
-  cModules1 = TreeViewColumn("Module", rModules1, {"text" => 0})
+  tvModules = @TreeView(TreeModel(storeModules))
+  rModules1 = @CellRendererText()
+  cModules1 = @TreeViewColumn("Module", rModules1, {"text" => 0})
   G_.sort_column_id(cModules1,0)
   push!(tvModules,cModules1)
   
-  G_.sort_column_id(storeModules,0,GtkSortType.ASCENDING)
+  G_.sort_column_id( TreeSortable(storeModules),0,GtkSortType.ASCENDING)
   
   variables = names(Main)
   
@@ -30,17 +28,17 @@ function ModuleBrowser()
     end
   end
   
-  storeContent = ListStore(String,String)
+  storeContent = @ListStore(String,String)
   
-  tvContent = TreeView(storeContent)
-  rContent1 = CellRendererText()
-  cContent1 = TreeViewColumn("Name", rContent1, {"text" => 0})
-  cContent2 = TreeViewColumn("Type", rContent1,{"text" => 1})
+  tvContent = @TreeView(TreeModel(storeContent))
+  rContent1 = @CellRendererText()
+  cContent1 = @TreeViewColumn("Name", rContent1, {"text" => 0})
+  cContent2 = @TreeViewColumn("Type", rContent1,{"text" => 1})
   G_.sort_column_id(cContent1,0)
   G_.sort_column_id(cContent2,1)
   push!(tvContent,cContent1,cContent2)
   
-  G_.sort_column_id(storeContent,0,GtkSortType.ASCENDING)  
+  G_.sort_column_id( TreeSortable(storeContent) ,0,GtkSortType.ASCENDING)  
   
   swModules = G_.object(builder,"swModules")
   push!(swModules,tvModules)    
@@ -48,13 +46,13 @@ function ModuleBrowser()
   swContent = G_.object(builder,"swContent")
   push!(swContent,tvContent)  
   
-  textBuf = TextBuffer()
-  textV = TextView(textBuf)  
+  textBuf = @TextBuffer()
+  textV = @TextView(textBuf)  
   swMethods = G_.object(builder,"swMethods")
   push!(swMethods,textV)
   
-  textBufHelp = TextBuffer()
-  textVHelp = TextView(textBufHelp)  
+  textBufHelp = @TextBuffer()
+  textVHelp = @TextView(textBufHelp)  
   swHelp = G_.object(builder,"swHelp")
   push!(swHelp,textVHelp)  
   
@@ -64,7 +62,7 @@ function ModuleBrowser()
   
   function updateContent( widget=nothing )
     if hasselection(selection)
-      m, currentIt = selected(selection)
+      m, currentIt = selected( selection )
 
       selectedModule = storeModules[currentIt]
       println(selectedModule)
@@ -88,7 +86,7 @@ function ModuleBrowser()
   
   function updateMethods( widget=nothing )
     if hasselection(selectionCont)
-      m, currentItCont = selected(selectionCont)
+      m, currentItCont = selected( selectionCont )
 
       selectedCont = storeContent[currentItCont]
       println(selectedCont)
@@ -123,11 +121,10 @@ function ModuleBrowser()
   
   signal_connect(updateMethods, selectionCont, "changed")   
   
-  
-  
   win = G_.object(builder,"mainWindow")
   show(win)
   
   moduleBrowser = ModuleBrowser(win.handle)
   Gtk.gc_move_ref(moduleBrowser, win)
+  moduleBrowser
 end

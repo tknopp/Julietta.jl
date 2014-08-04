@@ -1,27 +1,27 @@
 
 import REPLCompletions
 
-type Terminal <: Gtk.GtkBoxI
-  handle::Ptr{Gtk.GObjectI}
+type Terminal <: Gtk.GtkBox
+  handle::Ptr{Gtk.GObject}
   id::Int
-  entry::Entry
-  combo::GtkComboBoxText
-  textView::TextView
+  entry
+  combo
+  textView
 end
 
 function Terminal()
   id = addprocs(1)[]
   remotecall_fetch(id, Base.load_juliarc)
 
-  combo = GtkComboBoxText(true)
+  combo = @GtkComboBoxText(true)
   entry = G_.child(combo)
-  textBuf = TextBuffer()
-  textView = TextView(textBuf)
+  textBuf = @TextBuffer()
+  textView = @TextView(textBuf)
   
-  sw = ScrolledWindow()
+  sw = @ScrolledWindow()
   push!(sw,textView)        
   
-  vbox = BoxLayout(:v)
+  vbox = @Box(:v)
   push!(vbox,combo)
   push!(vbox,sw)
   setproperty!(vbox,:expand,sw,true)
@@ -37,8 +37,8 @@ function Terminal()
     end
   end
   
-  completion = EntryCompletion()
-  G_.model(completion,GtkNullContainer())
+  completion = @EntryCompletion()
+  G_.model(completion,@Null())
   #G_.inline_selection(completion,true)
   G_.completion(entry,completion)
   G_.minimum_key_length(completion,1)
@@ -113,7 +113,7 @@ function Terminal()
 		prefix = bytestring(G_.text(terminal.entry))
         
         # TODO -> Gtk.jl
-        selection_bounds(editable::Gtk.GtkEditableI)=
+        selection_bounds(editable)=
           bool( ccall((:gtk_editable_get_selection_bounds,Gtk.libgtk), Cint, 
 	     (Ptr{Gtk.GObject},Ptr{Cint},Ptr{Cint}),editable, C_NULL,C_NULL))
          
@@ -159,10 +159,11 @@ function Terminal()
   end   
   
   Gtk.gc_move_ref(terminal, vbox)
+  terminal
 end
 
 function get_completion(term::Terminal, prefix)
-  liststore = ListStore(String)
+  liststore = @ListStore(String)
   c,r = @fetchfrom term.id REPLCompletions.completions(prefix,endof(prefix))
   for s in c
       push!(liststore, (s,) )  
